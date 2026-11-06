@@ -1,5 +1,5 @@
 # โปรเจกต์จริงของคุณ (มีที่อยู่โฟลเดอร์ในเครื่อง) — ไม่ขึ้น git
-projects.json
+/projects.json
 
 # logs
 *.log
