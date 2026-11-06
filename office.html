@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Office (Live)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--wood:#8b5a2b;--wood-d:#5e3b1c;--cream:#fff6e5;--paper:#fbecd0;--ink:#3a2a1c;--muted:#7a6450;--teal:#2a9d8f;--teal-d:#1d6f66}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#211a15;background-image:radial-gradient(circle at 20% 0%,#3a2c22 0,#211a15 55%);font-family:Kanit,system-ui,sans-serif;color:var(--ink);min-height:100vh}
+.app{max-width:1440px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.topbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ecd3a3;border:3px solid var(--wood-d);box-shadow:inset 0 0 0 2px #f8e6c2,0 4px 0 #120d0a;padding:8px 10px;border-radius:6px}
+.brand{font-family:Silkscreen,monospace;font-weight:700;font-size:15px;color:var(--wood-d);margin-right:4px;letter-spacing:.5px}
+.tab{font:500 14px Kanit,sans-serif;background:#f8ead0;border:2px solid var(--wood);color:var(--ink);padding:4px 10px;border-radius:4px;cursor:pointer;box-shadow:0 2px 0 var(--wood-d)}
+.tab.active{background:var(--teal);color:#fff;border-color:var(--teal-d)}
+.tab:disabled{opacity:.55;cursor:not-allowed}
+a.tab{text-decoration:none;display:inline-block}
+.spacer{flex:1}
+.clock{font-family:Silkscreen,monospace;font-size:15px;background:#3a2a1c;color:#ffe08a;padding:4px 10px;border-radius:4px;border:2px solid var(--wood-d)}
+.speed{display:flex;gap:4px}
+.speed button{font:600 13px Silkscreen,monospace;min-width:38px;background:#f8ead0;border:2px solid var(--wood);border-radius:4px;padding:3px 6px;cursor:pointer;color:var(--ink);box-shadow:0 2px 0 var(--wood-d)}
+.speed button.on{background:#ffd166;border-color:#b5832a}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:12px;align-items:start}
+@media(max-width:980px){.main{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:12px;min-width:0}
+.stage{position:relative;border:4px solid var(--wood-d);border-radius:6px;overflow:hidden;box-shadow:0 6px 0 #120d0a;background:#000;--u:2}
+canvas#room{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+.overlay{position:absolute;inset:0;pointer-events:none}
+.sign{position:absolute;transform:translate(-50%,-50%);font-family:Silkscreen,monospace;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 1px 0 #0d4a43;letter-spacing:.04em}
+.sign.big{font-size:calc(var(--u)*7.2px)}
+.sign.small{font-size:calc(var(--u)*4.4px);color:#3a2a1c;text-shadow:none}
+.tag{position:absolute;transform:translate(-50%,0);white-space:nowrap;font-weight:600;color:#fff;font-size:max(10px,calc(var(--u)*4.4px));text-shadow:-1px -1px 0 #2a1d14,1px -1px 0 #2a1d14,-1px 1px 0 #2a1d14,1px 1px 0 #2a1d14,0 2px 0 #2a1d14;pointer-events:auto;cursor:pointer;line-height:1.1}
+.tag.sel{color:#ffe08a}
+.bubble{position:absolute;transform:translate(-50%,-100%);background:#fff;border:2px solid #2a1d14;border-radius:6px;padding:2px 7px;font-size:max(10px,calc(var(--u)*4.1px));line-height:1.3;white-space:nowrap;max-width:none;box-shadow:0 2px 0 rgba(0,0,0,.25);opacity:0;transition:opacity .2s}
+.bubble.show{opacity:1}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:5px solid transparent;border-top-color:#2a1d14;border-bottom:0}
+.panel{background:var(--cream);border:3px solid var(--wood-d);border-radius:6px;box-shadow:0 4px 0 #120d0a;padding:12px}
+.panel h2{margin:0 0 8px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px}
+.panel h2 .en{font-family:Silkscreen,monospace;font-size:12px;color:var(--muted);font-weight:400}
+.team{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{display:flex;gap:8px;align-items:center;background:var(--paper);border:2px solid #e2c48f;border-radius:6px;padding:6px;cursor:pointer;min-width:0;text-align:left;font:inherit;color:inherit}
+.card:hover{border-color:var(--wood)}
+.card.sel{border-color:var(--teal);background:#e6f5f2}
+.card img{width:30px;height:45px;image-rendering:pixelated;flex:none}
+.card .nm{font-weight:600;font-size:14px;line-height:1.2}
+.card .st{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card>div{min-width:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.detail .head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.detail .head img{width:44px;height:66px;image-rendering:pixelated;background:var(--paper);border:2px solid #e2c48f;border-radius:6px;padding:2px}
+.detail .role{font-family:Silkscreen,monospace;font-size:11px;color:var(--muted)}
+.detail .nm{font-size:18px;font-weight:600}
+.box{background:var(--paper);border:2px solid #e2c48f;border-radius:6px;padding:8px;margin-bottom:8px}
+.lbl{font-size:12px;color:var(--muted)}
+.bar{height:8px;background:#e8d3ac;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;background:var(--teal);border-radius:4px;transition:width .25s linear}
+.logs{list-style:none;margin:0;padding:0;font-size:13px;max-height:180px;overflow:auto}
+.logs li{padding:4px 0;border-bottom:1px dashed #e2c48f;display:flex;gap:6px}
+.logs li:last-child{border-bottom:0}
+.logs time{font-family:Silkscreen,monospace;font-size:11px;color:var(--muted);flex:none;padding-top:2px}
+.hint{font-size:14px;color:var(--muted);text-align:center;padding:14px 6px}
+.kanban{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+@media(max-width:640px){.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.col{background:var(--paper);border:2px solid #e2c48f;border-radius:6px;padding:6px;min-height:120px}
+.col h3{margin:0 0 6px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.col h3 span{font-family:Silkscreen,monospace;font-size:11px;background:#fff;border-radius:10px;padding:0 6px;color:var(--muted)}
+.chip{background:#fff;border:1px solid #e2c48f;border-left:4px solid var(--c,#999);border-radius:4px;padding:5px 6px;margin-bottom:6px;font-size:12px;line-height:1.3}
+.chip .id{font-family:Silkscreen,monospace;font-size:10px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.chip .who{display:flex;align-items:center;gap:3px;font-family:Kanit;font-size:11px;color:var(--ink)}
+.chip .who img{width:12px;height:18px;image-rendering:pixelated}
+.chip .bug{color:#c0392b;font-family:Kanit;font-size:11px}
+.chip .bar{height:4px;margin-top:4px}
+.foot{font-size:12px;color:#c9b393;text-align:center}
+.conn{font-size:13px;background:#fff6e5;border:2px solid var(--wood);border-radius:4px;padding:3px 8px}
+.building{display:grid;gap:10px;padding:10px;background:#5e3b1c;border:4px solid #3a2414;border-radius:8px;box-shadow:0 6px 0 #120d0a,inset 0 0 0 2px #7a4a26}
+.cell{position:relative;background:#000;border-radius:3px;overflow:hidden;box-shadow:0 0 0 2px #2a1a0e}
+.cell iframe{display:block;width:100%;aspect-ratio:384/240;border:0}
+.cell .plate{position:absolute;left:8px;bottom:8px;z-index:2;background:rgba(255,246,229,.94);border:2px solid var(--wood-d);border-radius:4px;padding:2px 8px;font-weight:600;font-size:13px;color:var(--ink);text-decoration:none;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.cell .plate:hover{background:#ffe08a}
+.cell .door{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:44px;height:6px;background:#c9a77a;border-radius:2px 2px 0 0;z-index:2}
+.cell.empty{display:flex;align-items:center;justify-content:center;aspect-ratio:384/240;background:repeating-linear-gradient(45deg,#3a2c22 0 12px,#33261d 12px 24px);color:#c9b393;font-size:14px}
+.ovlow{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start;margin-top:12px}
+@media(max-width:980px){.ovlow{grid-template-columns:1fr}}
+body.embed{background:transparent}
+body.embed .app{padding:0;max-width:none;gap:0}
+body.embed .topbar,body.embed .left>.panel,body.embed .side,body.embed .foot{display:none!important}
+body.embed .main{display:block}
+body.embed .stage{border:0;border-radius:0;box-shadow:none}
+body.embed canvas#room{cursor:pointer!important}
+.hq{display:grid;grid-template-columns:240px minmax(0,1fr);gap:12px;align-items:start}
+@media(max-width:900px){.hq{grid-template-columns:1fr}}
+.roster{background:var(--cream);border:3px solid var(--wood-d);border-radius:6px;box-shadow:0 4px 0 #120d0a;padding:10px;max-height:calc(100vh - 120px);overflow:auto}
+.roster .rhead{font-size:15px;margin-bottom:4px}
+.roster .live{color:#3fae6a;font-size:12px;font-weight:600}
+.roster h3{font-size:13px;margin:10px 0 4px;display:flex;align-items:center;gap:6px}
+.roster h3 a{color:var(--ink);text-decoration:none}.roster h3 a:hover{text-decoration:underline}
+.roster .sq{width:10px;height:10px;border-radius:2px;display:inline-block}
+.ag{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:5px;cursor:pointer;border:2px solid transparent}
+.ag:hover{background:var(--paper)}.ag.sel{border-color:var(--teal);background:#e6f5f2}
+.ag img{width:20px;height:30px;image-rendering:pixelated;flex:none}
+.ag .n{font-weight:600;font-size:13px;line-height:1.15}.ag .r{font-size:11px;color:var(--muted)}
+.pill{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:8px;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+.agd{font-size:12px;background:var(--paper);border-radius:4px;padding:6px;margin:2px 0 6px}
+.hqstage #hqZoom{position:relative;transform-origin:0 0;transition:transform .55s cubic-bezier(.3,.7,.2,1)}
+#hqToasts{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:5;pointer-events:none}
+.toast{background:#fff6e5;border:3px solid #2a1d14;border-radius:8px;padding:6px 14px;font-weight:600;font-size:14px;box-shadow:0 4px 0 rgba(0,0,0,.35);animation:toastIn .45s cubic-bezier(.2,1.6,.4,1),toastOut .4s ease-in 4.6s forwards;white-space:nowrap}
+.toast.new{border-color:#b5832a;background:#fff3cd}.toast.done{border-color:#2f8a52;background:#e3f7e9}
+@keyframes toastIn{from{transform:translateY(-30px) scale(.7);opacity:0}to{transform:none;opacity:1}}
+@keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
+#zoomOut{position:absolute;right:10px;top:10px;z-index:6;font:600 13px Kanit,sans-serif;background:#fff6e5;border:2px solid #2a1d14;border-radius:6px;padding:4px 10px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+#zoomHint{position:absolute;right:10px;bottom:8px;z-index:4;font-size:11px;color:#fff;background:rgba(42,29,20,.6);padding:1px 8px;border-radius:8px;pointer-events:none}
+.ag.flash{animation:flash 1s ease-in-out 5}
+@keyframes flash{50%{background:#ffe08a}}
+.hqstage{position:relative;border:4px solid var(--wood-d);border-radius:6px;overflow:hidden;box-shadow:0 6px 0 #120d0a;background:#000;--u:2}
+#hq{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:pointer}
+.rlabel{position:absolute;font-family:Silkscreen,monospace;font-size:max(7px,calc(var(--u)*3.6px));color:#fff;background:rgba(58,42,28,.78);padding:0 4px;border-radius:2px;white-space:nowrap;pointer-events:none}
+.plabel{position:absolute;transform:translate(-50%,-50%);font-family:Silkscreen,monospace;font-weight:700;font-size:max(7px,calc(var(--u)*3.6px));color:#fff;white-space:nowrap;pointer-events:none;text-shadow:0 1px 0 rgba(0,0,0,.4)}
+.hqstage .tag.bosstag{color:#ffd76a}
+.blabel{position:absolute;transform:translate(-50%,-50%);font-family:Silkscreen,Kanit,monospace;font-size:max(5px,calc(var(--u)*2.6px));color:#fff;white-space:nowrap;pointer-events:none;text-shadow:0 0 1px #000}
+.nlabel{position:absolute;transform:translate(-50%,-50%);font-family:Silkscreen,monospace;font-size:calc(var(--u)*2.3px);color:#2a1d14;pointer-events:auto;line-height:1}
+.hqstage .tag{font-size:max(8px,calc(var(--u)*3.3px))}
+.hqstage .bubble{font-size:max(8px,calc(var(--u)*3.3px));padding:1px 5px}
+.ov{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start}
+@media(max-width:980px){.ov{grid-template-columns:1fr}}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px}
+@media(max-width:520px){.rooms{grid-template-columns:1fr}}
+.roomcard{background:var(--cream);border:3px solid var(--wood-d);border-radius:6px;box-shadow:0 4px 0 #120d0a;padding:10px;cursor:pointer;text-decoration:none;color:inherit;display:block;transition:transform .12s}
+.roomcard:hover{transform:translateY(-2px)}
+.roomcard .rh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:16px}
+.roomcard .rh .go{font-size:12px;color:var(--muted);font-weight:400}
+.mini{position:relative;border:3px solid var(--wood-d);border-radius:4px;overflow:hidden;--u:1}
+.mini canvas{display:block;width:100%;image-rendering:pixelated}
+.mini .sign{font-size:calc(var(--u)*7px)}
+.ppl{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:8px;font-size:12px}
+.ppl div{display:flex;align-items:center;gap:4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppl img{width:12px;height:18px;image-rendering:pixelated;flex:none}
+.cnt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cnt span{font-size:12px;background:var(--paper);border:1px solid #e2c48f;border-left:4px solid var(--c);border-radius:4px;padding:1px 6px}
+.big{font-family:Silkscreen,monospace;font-size:26px;line-height:1}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sumgrid .box{margin:0;text-align:center}
+.tip{display:none;background:#fff3cd;border:2px dashed #b5832a;border-radius:6px;padding:8px 10px;font-size:13px;margin-bottom:8px}
+.tip code{background:#fff;padding:0 4px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <span class="brand">AI OFFICE</span>
+    <span id="tabs" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+    <span class="spacer"></span>
+    <span class="conn" id="conn">กำลังเชื่อมต่อ…</span>
+    <span class="clock" id="clock">--:--</span>
+  </div>
+  <div id="ovWrap" style="display:none">
+    <div class="hq">
+      <aside class="roster" id="roster"></aside>
+      <div class="hqstage" id="hqStage"><div id="hqZoom"><canvas id="hq"></canvas><div class="overlay" id="hqOverlay"></div></div><div id="hqToasts"></div><button id="zoomOut" style="display:none">🔍 ซูมออก</button><div id="zoomHint">คลิกที่ห้องเพื่อซูม</div></div>
+    </div>
+    <div class="ovlow">
+      <div class="panel"><h2>📰 กิจกรรมล่าสุดทุกทีม</h2><ul class="logs" id="ovFeed" style="max-height:260px"></ul></div>
+      <div class="panel"><h2>🏙️ ภาพรวมทั้งออฟฟิศ</h2><div class="sumgrid" id="sum"></div></div>
+    </div>
+  </div>
+  <div class="main" id="roomWrap">
+    <div class="left">
+      <div class="stage" id="stage">
+        <canvas id="room"></canvas>
+        <div class="overlay" id="overlay"></div>
+      </div>
+      <div class="panel">
+        <h2>📋 บอร์ดงานจริง <span class="en" id="boardName">.review/TASKS.md</span></h2>
+        <div class="tip" id="tip">ยังไม่มี agent ส่งสถานะเข้ามา น้องๆ เลยพักกันอยู่ · ให้ Antigravity แต่ละตัวเขียนไฟล์ <code>.office/status/&lt;ui|dev|tester&gt;.json</code> ตามไฟล์บทบาทใน <code>.office/roles/</code></div>
+        <div class="kanban" id="kanban"></div>
+      </div>
+    </div>
+    <div class="side" style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel"><h2>👥 ทีมในห้อง</h2><div class="team" id="team"></div></div>
+      <div class="panel detail" id="detail"></div>
+      <div class="panel"><h2>📰 กิจกรรมล่าสุด</h2><ul class="logs" id="feed"></ul></div>
+    </div>
+  </div>
+  <div class="foot">อ่านข้อมูลจากโปรเจกต์จริงทุก 3 วินาที · .review/ · git log · .office/status/</div>
+</div>
+<script>
+(() => {
+/* ================= CONFIG ================= */
+const W = 384, H = 240, CORR = 128;
+const DESKS = [16, 108, 200, 292];
+const cxOf = d => DESKS[d] + 38;
+const SEAT_Y = 101;
+const POLL_MS = 3000;
+
+// ทีม: Claude = PM, Antigravity แยกเป็น 3 agent (ui / dev / tester)
+// ชื่อไฟล์สถานะ = .office/status/<id>.json
+const AGENTS = [
+  { id:'pm',     name:'Claude',      sub:'PM · Claude',          role:'PROJECT MANAGER', desk:0, label:'PM',  hair:'#3a2a1c', style:'bun',   shirt:'#d97757', pants:'#4a3b2a', skin:'#f3c9a5', screen:'board' },
+  { id:'ui',     name:'น้อง UI',     sub:'UI · Antigravity',     role:'UI DESIGNER',     desk:1, label:'UI',  hair:'#c2562e', style:'long',  shirt:'#e07a9a', pants:'#3b3550', skin:'#f6d2b3', screen:'design' },
+  { id:'dev',    name:'น้อง Dev',    sub:'Dev · Antigravity',    role:'DEVELOPER',       desk:2, label:'DEV', hair:'#2b1d14', style:'spiky', shirt:'#3b6fd8', pants:'#2d3448', skin:'#e9b98f', screen:'code', glasses:true },
+  { id:'tester', name:'น้อง Tester', sub:'Tester · Antigravity', role:'QA TESTER',       desk:3, label:'QA',  hair:'#1d1d2b', style:'short', shirt:'#3fae6a', pants:'#2f3b33', skin:'#f1c7a1', screen:'test' },
+];
+const COLS = [
+  { key:'TODO',        label:'รอทำ',       color:'#9a8a78' },
+  { key:'IN PROGRESS', label:'กำลังทำ',    color:'#3b6fd8' },
+  { key:'IN REVIEW',   label:'รอ Claude ตรวจ', color:'#d97757' },
+  { key:'DONE',        label:'เสร็จแล้ว',   color:'#3fae6a' },
+  { key:'OTHER',       label:'พัก / รอตัดสินใจ', color:'#b5832a' },
+];
+const ACTIVE = new Set(['working','testing','reviewing','coding','designing','planning']);
+const STATE_TH = { working:'กำลังทำงาน', testing:'กำลังทดสอบ', reviewing:'กำลังตรวจงาน', coding:'กำลังเขียนโค้ด', designing:'กำลังออกแบบ', planning:'กำลังวางแผน', waiting:'มีงานรอตรวจ', blocked:'ติดอยู่ รอผู้ใช้', idle:'ว่าง / พัก' };
+
+const CHATS = [
+  ['ช่วยดูโค้ดตรงนี้หน่อยดิ','ได้ๆ ตรงไหนอะ','บรรทัด 42 อะ','อ๋อ ลืมเช็ก null 😅'],
+  ['กินข้าวยัง?','ยังเลย','เดี๋ยวไปด้วยกัน 🍜','โอเค รอแป๊บ'],
+  ['บั๊กนี้แปลกมาก','เปิด log ดูยัง','ดูแล้ว งงกว่าเดิม','555 เดี๋ยวช่วยดู'],
+  ['☕ เอากาแฟมั้ย','เอาลาเต้หวานน้อย','จัดให้!','ขอบคุณน้า 🙏'],
+  ['วันนี้งานเยอะมั้ย','พอไหวๆ','สู้ๆ นะ 💪','สู้ตาย!'],
+  ['เห็นดีไซน์ใหม่ยัง','ยังเลย สวยมั้ย','สวยมาก ✨','เดี๋ยวไปดู'],
+  ['เมื่อคืนดูบอลป่าว ⚽','ดู! เสียดายมาก','ปีหน้าเอาใหม่','555 ทุกปี'],
+];
+const SPOTS = {
+  coffee:{ x:350, y:146, dir:'right', label:'☕ ชงกาแฟ', log:'ว่างงาน แวะไปชงกาแฟ' },
+  water: { x:350, y:182, dir:'right', label:'💧 เติมน้ำ', log:'ไปเติมน้ำ' },
+  sofa1: { x:31, y:172, dir:'right', sofa:true, via:{x:46,y:172}, label:'😌 พักสายตาแป๊บ', log:'นั่งพักบนโซฟา' },
+  sofa2: { x:31, y:192, dir:'right', sofa:true, via:{x:46,y:192}, label:'😌 พักสายตาแป๊บ', log:'นั่งพักบนโซฟา' },
+  board: { x:294, y:222, dir:'up', via:{x:332,y:222}, label:'📌 ดูบอร์ดงาน', log:'ไปดูบอร์ดงาน' },
+  m1:{ x:176, y:174, dir:'right', label:'🗣️ แวะโต๊ะประชุม', log:'แวะไปที่โต๊ะประชุม', pair:'m2' },
+  m2:{ x:208, y:174, dir:'left', label:'🗣️ แวะโต๊ะประชุม', log:'แวะไปที่โต๊ะประชุม', pair:'m1' },
+  board2:{ x:274, y:222, dir:'up', via:{x:332,y:222}, label:'📌 ดูบอร์ดงาน', log:'ไปดูบอร์ดงาน' },
+};
+
+/* ================= HELPERS ================= */
+const rand = (a,b) => a + Math.random()*(b-a);
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1),16);
+  let r=n>>16, g=(n>>8)&255, b=n&255;
+  const f = v => Math.max(0,Math.min(255,Math.round(amt<0 ? v*(1+amt) : v+(255-v)*amt)));
+  return '#'+((1<<24)|(f(r)<<16)|(f(g)<<8)|f(b)).toString(16).slice(1);
+}
+function R(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); }
+function hash(n){ n=Math.floor(n)|0; n=(n^61)^(n>>>16); n=Math.imul(n,9); n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return (n>>>0)/4294967296; }
+let seed = 11; const srnd = () => (seed = (seed*16807)%2147483647, (seed-1)/2147483646);
+
+/* ================= THEMES ================= */
+const THEMES={
+  wood:{ floor:'#c97b45', floorLine:'#b06a3a', speck:['#d48a55','#bd7040'], wall:'#f4e4c1', trim:'#8b5a2b', wains:'#e2c48f', wainsLine:'#d1af75', wainsTop:'#c99f62',
+    carpet:['#3e9a7a','#4aa886','#52b08f'], sign:['#1d6f66','#2a9d8f','#47b8a9'], deskTop:'#d9a066', deskHi:'#ebb985', deskEdge:'#a8703f', deskLeg:'#7a4a26',
+    rug:['#6f8dbf','#7d9bc9','#7393c2'], lounge:['#d8b98a','#e6c9a0','#dcbd90'], sofa:['#a83f3f','#8f3434','#d65f5f','#b84d4d'], frame:'#7a4a26', bottom:'#6b4226', accent:'#2a9d8f' },
+  sky:{ floor:'#dbe3ec', floorLine:'#c3cedb', speck:['#e4eaf1','#d0d9e4'], wall:'#eef6ff', trim:'#2f5d8a', wains:'#d4e4f5', wainsLine:'#bed2e9', wainsTop:'#a9c3e0', tiles:true,
+    carpet:['#2f6fb0','#3b82c4','#5596d6'], sign:['#163a63','#1e4f86','#3a6fa8'], deskTop:'#f1f3f6', deskHi:'#ffffff', deskEdge:'#c3cad4', deskLeg:'#8a94a3',
+    rug:['#9fb6cf','#b4c8dd','#a8bfd6'], lounge:['#c9d6e4','#dbe5ef','#cfdbe8'], sofa:['#2f5d8a','#244b70','#3f7ab3','#356a9c'], frame:'#5d7590', bottom:'#2f4a66', accent:'#1e4f86' },
+  mint:{ floor:'#a9cdb3', floorLine:'#93bb9e', speck:['#b6d7bf','#9cc4a8'], wall:'#f3fbf4', trim:'#3d7a57', wains:'#d6ecd9', wainsLine:'#c1e0c6', wainsTop:'#a8d1b0',
+    carpet:['#d9822b','#e8963f','#f0a95e'], sign:['#7a3d1e','#b5592b','#d4774a'], deskTop:'#e8d3b0', deskHi:'#f5e6cc', deskEdge:'#c4a77c', deskLeg:'#8a6d47',
+    rug:['#e2b26b','#ecc283','#e6b977'], lounge:['#d9e8d0','#e8f2e1','#dfecd7'], sofa:['#3d7a57','#2f6146','#55a077','#4a8c68'], frame:'#3d7a57', bottom:'#2f6146', accent:'#b5592b' },
+  night:{ floor:'#3a3550', floorLine:'#2e2a42', speck:['#433d5c','#332f48'], wall:'#2b2840', trim:'#191726', wains:'#3a3654', wainsLine:'#332f4a', wainsTop:'#4a4566', night:true,
+    carpet:['#6b3fa0','#7d4fb8','#9165cc'], sign:['#3b1f5e','#6b3fa0','#9a6fd0'], deskTop:'#5a5470', deskHi:'#6c6684', deskEdge:'#47425c', deskLeg:'#2e2a42',
+    rug:['#4a3f6e','#574b80','#504476'], lounge:['#4a4560','#57516f','#504a68'], sofa:['#c0567a','#a3465f','#d9739a','#c95f86'], frame:'#191726', bottom:'#191726', accent:'#9a6fd0' },
+};
+const THEME_ORDER=['wood','sky','mint','night'];
+const bgCache={};
+function bgFor(name){ const T=THEMES[name]||THEMES.wood; if(!bgCache[name]){ const c=document.createElement('canvas'); c.width=W; c.height=H; seed=11; drawBackground(c.getContext('2d'),T); bgCache[name]=c; } return bgCache[name]; }
+
+/* ================= CANVAS ================= */
+const cv = document.getElementById('room');
+let ctx = cv.getContext('2d'); const roomCtx = ctx;
+cv.width = W; cv.height = H;
+
+/* ---------- ห้องเดี่ยว: สไตล์ RPG (ขอบเข้ม มีมิติ) ---------- */
+const ROOM_FACE={wood:'#34476a',sky:'#3d6a99',mint:'#3d7a57',night:'#2b2840'};
+function drawBackground(c,T){
+  const OL='#2a1d14';
+  const r_=(x,y,w,h,col)=>R(c,x,y,w,h,col);
+  const box=(x,y,w,h,col)=>{ r_(x,y,w,h,OL); r_(x+1,y+1,w-2,h-2,col); };
+  const tname=(Object.entries(THEMES).find(([k,v])=>v===T)||['wood'])[0];
+  const FC=ROOM_FACE[tname]||'#34476a';
+  // ---- floor ----
+  r_(0,60,W,H-60,T.floor);
+  if(T.tiles){ for(let y=60;y<H;y+=12) r_(0,y,W,1,T.floorLine); for(let x=0;x<W;x+=12) r_(x,60,1,H-60,T.floorLine); for(let y=66;y<H;y+=12) for(let x=6;x<W;x+=12){ r_(x-1,y,3,1,T.speck[1]); r_(x,y-1,1,3,T.speck[1]); } }
+  else { for(let y=60,row=0;y<H;y+=6,row++){ r_(0,y,W,1,T.floorLine); for(let x=((row*13)%24)-24;x<W;x+=24) if(x>=0) r_(x,y,1,6,T.floorLine); } }
+  for(let i=0;i<220;i++) r_(srnd()*W,60+srnd()*(H-60),2,1,srnd()<.5?T.speck[0]:T.speck[1]);
+  // ---- wall face ----
+  r_(0,0,W,60,FC); r_(0,0,W,3,shade(FC,-.4)); r_(0,56,W,4,shade(FC,-.3)); r_(0,59,W,1,OL);
+  for(let x=10;x<W;x+=22) r_(x,4,1,50,shade(FC,.08));
+  // windows
+  [14,72,260,318].forEach(x=>{ box(x-2,6,56,36,T.frame); const y=8,w=52,h=32;
+    for(let i=0;i<h;i++) r_(x,y+i,w,1, T.night?`rgb(${Math.round(20+30*i/h)},${Math.round(24+30*i/h)},${Math.round(60+50*i/h)})`:`rgb(${Math.round(140+70*i/h)},${Math.round(205+30*i/h)},255)`);
+    if(T.night){ for(let i=0;i<6;i++) r_(x+3+Math.floor(hash(i+x)*(w-6)),y+2+Math.floor(hash(i*7+x)*(h/2)),1,1,'#fff7c2'); r_(x+w-12,y+4,5,5,'#fff2b0'); }
+    else { r_(x+6,y+6,10,3,'#fff'); r_(x+9,y+4,6,3,'#fff'); r_(x+w-20,y+10,12,3,'#f4fbff'); }
+    for(let i=0;i<w;i+=4){ const th=5+Math.floor(hash(i+x)*6); r_(x+i,y+h-th,4,th,i%8?'#5aa457':'#4a9447'); }
+    r_(x+w/2-1,y,2,h,T.frame); r_(x,y+h/2-1,w,2,T.frame); r_(x-3,y+h+2,w+6,3,OL); r_(x-2,y+h+2,w+4,2,T.deskTop); });
+  // sign
+  box(136,8,112,30,T.sign[0]); r_(139,11,106,24,T.sign[1]); r_(139,11,106,1,T.sign[2]); [[141,13],[241,13],[141,31],[241,31]].forEach(([x,y])=>r_(x,y,2,2,'#d9f2ee'));
+  // role plaques
+  AGENTS.forEach(a=>{ const x=cxOf(a.desk); box(x-21,46,42,11,shade(a.shirt,-.25)); r_(x-19,48,38,7,shade(a.shirt,.5)); });
+  // ---- carpets under stations ----
+  DESKS.forEach(x=>{ r_(x-6,62,88,55,OL); r_(x-5,63,86,53,T.carpet[0]); r_(x-3,65,82,49,T.carpet[1]); for(let yy=68;yy<112;yy+=5) for(let xx=x+((yy/5)%2)*2;xx<x+76;xx+=5) r_(xx,yy,1,1,T.carpet[2]); });
+  // ---- desks ----
+  DESKS.forEach(x=>{ r_(x,70,76,21,OL); r_(x+1,71,74,11,T.deskTop); r_(x+1,71,74,1,T.deskHi); r_(x+1,82,74,8,T.deskEdge); r_(x+1,89,74,1,shade(T.deskEdge,-.3));
+    r_(x+2,91,3,6,OL); r_(x+71,91,3,6,OL); r_(x+3,91,1,5,T.deskLeg); r_(x+72,91,1,5,T.deskLeg); });
+  AGENTS.forEach(a=>{
+    const x=DESKS[a.desk], cx=cxOf(a.desk);
+    box(cx-8,77,16,5,'#e9e9ef'); r_(cx-6,78,12,1,'#c9c9d4'); r_(cx-6,80,12,1,'#c9c9d4'); box(cx+11,77,4,5,'#e9e9ef');
+    const mc=['#ffffff','#ffd166','#7cc6f2','#f7a6c1'][a.desk]; box(x+4,73,6,6,mc); r_(x+10,74,1,3,OL); r_(x+5,74,4,1,'#6b3e1f');
+    if(a.screen==='design'){ box(x+55,73,15,10,'#2b2b38'); r_(x+57,75,11,6,'#44445a'); r_(x+66,72,1,8,'#888'); }
+    if(a.screen==='board'){ box(x+56,73,13,10,'#fff'); box(x+59,71,13,10,'#fdf6e3'); r_(x+61,74,7,1,'#bbb'); r_(x+61,76,6,1,'#bbb'); }
+    if(a.screen==='test'){ box(x+59,75,12,8,'#555'); r_(x+61,77,8,4,'#7cc6f2'); }
+    if(a.screen==='code'){ box(x+61,76,10,7,'#2b2b38'); r_(x+63,78,6,3,'#3fae6a'); }
+  });
+  // ---- plants (กระถางขาว) ----
+  const plantW=(x,yb)=>{ box(x-5,yb-7,10,7,'#f2f2f2'); r_(x-4,yb-6,8,1,'#fff'); r_(x-4,yb-2,8,1,'#d8d8d8');
+    const L=[[-1,-20],[-6,-16],[4,-17],[-8,-11],[6,-12],[-3,-13],[2,-11]]; L.forEach(([dx,dy])=>r_(x+dx-1,yb+dy-1,5,8,OL)); L.forEach(([dx,dy],i)=>{ r_(x+dx,yb+dy,3,6,i%2?'#3f8f3f':'#5cb85c'); r_(x+dx+1,yb+dy+1,1,3,'#8fd18f'); }); };
+  [8,100,192,284,376].forEach(x=>plantW(x,104));
+  // ---- bookshelf ----
+  box(2,120,18,60,'#d9b27a'); for(let s=0;s<5;s++){ const y=123+s*11; r_(4,y,14,9,'#a87b47'); r_(4,y+9,14,1,'#7d5a33'); for(let k=0;k<4;k++) if(hash(s*9+k)>.2) r_(5+k*3,y+2+(k%2),2,7-(k%2),['#c0392b','#2a9d8f','#f2b134','#3b6fd8','#e07a9a','#6b4fa0'][(s+k)%6]); }
+  // ---- lounge ----
+  r_(15,149,72,62,OL); r_(16,150,70,60,T.lounge[0]); r_(18,152,66,56,T.lounge[1]); for(let y=156;y<206;y+=6) r_(20,y,62,1,T.lounge[2]);
+  r_(19,155,20,52,OL); r_(20,156,18,50,T.sofa[0]); r_(20,156,5,50,T.sofa[1]); r_(25,162,12,38,T.sofa[2]); r_(25,181,12,1,T.sofa[3]); r_(20,156,18,5,T.sofa[1]); r_(20,201,18,5,T.sofa[1]); r_(26,163,10,1,shade(T.sofa[2],.25));
+  box(55,165,22,30,'#a8703f'); r_(56,166,20,2,'#c08450'); box(59,169,8,10,'#3b6fd8'); r_(61,171,4,6,'#5b8ff0'); box(67,182,6,5,'#fff'); r_(69,183,2,1,'#6b3e1f');
+  // ---- meeting ----
+  r_(133,161,120,54,OL); r_(134,162,118,52,T.rug[0]); r_(136,164,114,48,T.rug[1]); for(let x=140;x<248;x+=8) r_(x,166,1,44,T.rug[2]);
+  r_(151,176,84,29,OL); r_(152,177,82,18,'#a0602f'); r_(152,177,82,1,'#bb7a45'); r_(152,195,82,9,'#7a4522');
+  box(165,180,13,9,'#9aa0a6'); r_(167,182,9,5,'#cfe8ff'); box(185,182,11,8,'#fff'); r_(187,185,6,1,'#bbb'); box(205,180,13,9,'#9aa0a6'); r_(207,182,9,5,'#ffe7c2'); box(221,184,6,6,'#fff');
+  // ---- whiteboard ----
+  r_(272,204,3,12,OL); r_(313,204,3,12,OL); r_(273,205,1,10,'#9aa0a6'); r_(314,205,1,10,'#9aa0a6');
+  box(267,171,54,36,'#9aa0a6'); r_(270,174,48,30,'#ffffff');
+  [['#ffd166',273,177],['#ffd166',281,177],['#f7a6c1',273,186],['#9ee6c9',291,177],['#9ee6c9',291,186],['#a6c8ff',305,177],['#ffd166',305,186],['#f7a6c1',305,195]].forEach(([col,x,y])=>{ box(x,y,8,7,col); r_(x+2,y+3,4,1,'rgba(0,0,0,.18)'); });
+  r_(288,175,1,28,'#ddd'); r_(302,175,1,28,'#ddd'); box(269,206,50,3,'#7a7f86');
+  // ---- counter + coffee + cooler ----
+  r_(359,127,25,75,OL); r_(360,128,24,73,'#f4f1ea'); r_(360,128,3,73,'#e0b878'); r_(360,200,24,1,'#c49a5a');
+  box(364,135,16,18,'#3d3d48'); r_(366,137,12,6,'#55556a'); r_(370,146,4,4,'#222'); r_(376,138,1,1,'#ff5a5a'); r_(369,151,6,2,'#fff');
+  box(364,166,16,24,'#eef2f5'); box(365,160,14,12,'#9fd3f5'); r_(367,162,4,8,'#c9ebff'); r_(370,180,5,2,'#3b6fd8');
+  // ---- bottom ----
+  plantW(12,234); plantW(372,234); plantW(126,234);
+  r_(0,236,W,4,shade(FC,-.35)); r_(0,236,W,1,OL);
+}
+
+/* ================= CHARACTER SPRITE (chibi + outline) ================= */
+const SPR_W=20, SPR_H=30, SPR_OL='#2a1d14';
+const sprCache=new Map();
+function buildSprite(a,pose,dir,f){
+  const cv=document.createElement('canvas'); cv.width=SPR_W; cv.height=SPR_H; const g=cv.getContext('2d'); g.translate(0,2);
+  const P=(x,y,w,h,col)=>{ g.fillStyle=col; g.fillRect(x,y,w,h); };
+  const S=a.skin, Sd=shade(a.skin,-.12), H=a.hair, Hd=shade(a.hair,-.28), Hl=shade(a.hair,.3);
+  const T=a.shirt, Td=shade(a.shirt,-.22), Tl=shade(a.shirt,.25), Pn=a.pants, Pd=shade(a.pants,-.25), SH='#3a3340', EYE='#2a1d14';
+  const side=dir==='right', back=dir==='up';
+  const sit=pose==='sit', sofa=pose==='sofa';
+  // ---------- legs ----------
+  if(!sit && a.skirt){
+    const SK=a.pants, LEG=shade(a.skin,-.05), HE='#1a1a22';
+    if(sofa){ if(side){ P(7,20,7,2,SK); P(12,22,2,1,LEG); P(13,23,3,1,HE); } else { P(6,20,8,2,SK); P(7,22,2,1,LEG); P(11,22,2,1,LEG); P(7,23,2,1,HE); P(11,23,2,1,HE); } }
+    else if(side){ P(7,21,6,2,SK); P(6,22,8,1,shade(SK,.1)); const o=f===1?1:f===2?-1:0; P(9-o,23,2,2,LEG); P(10+o,23,2,2,LEG); P(9-o,25,3,1,HE); P(10+o,25,3,1,HE); }
+    else { P(6,21,8,2,SK); P(5,22,10,1,shade(SK,.1)); const l=f===1?1:0, r=f===2?1:0; P(7,23,2,2-l,LEG); P(11,23,2,2-r,LEG); P(7,25-l,2,1,HE); P(11,25-r,2,1,HE); }
+  } else if(!sit){
+    if(sofa){
+      if(side){ P(8,20,6,2,Pn); P(13,20,2,3,Pn); P(13,23,3,1,SH); }
+      else { P(6,20,3,3,Pn); P(11,20,3,3,Pn); P(6,22,8,1,Pd); P(6,23,3,1,SH); P(11,23,3,1,SH); }
+    } else if(side){
+      const o=f===1?2:f===2?-2:0;
+      P(9-o/2,21,3,4,Pd); P(9+o/2,21,3,4,Pn);
+      P(9-o/2,25,4,1,SH); P(9+o/2,25,4,1,SH);
+    } else {
+      const l=f===1?1:0, r=f===2?1:0;
+      P(7,21,3,4-l,Pn); P(10,21,3,4-r,back?Pn:Pd);
+      P(7,25-l,3,1,SH); P(10,25-r,3,1,SH);
+    }
+  }
+  // ---------- body ----------
+  if(side){
+    P(7,15,6,6,T); P(7,15,6,1,Tl); P(12,16,1,5,Td);
+    const sw=(sit||sofa)?1:f===1?1:f===2?-1:0;
+    P(9+sw,16,2,4,Td); P(9+sw,20,2,1,S);
+  } else {
+    P(6,15,8,6,T); P(6,15,8,1,Tl); P(13,16,1,5,Td);
+    if(!back){ P(8,15,4,1,Sd); P(9,16,2,1,Sd); }
+    const typing=pose==='sit'&&back;
+    const lt=typing?(f%2):(f===1?-1:f===2?1:0), rt=typing?((f+1)%2):(f===1?1:f===2?-1:0);
+    P(4,15+Math.max(0,lt),2,5,T); P(4,15,1,5,Tl); P(4,20+lt,2,1,S);
+    P(14,15+Math.max(0,rt),2,5,Td); P(14,20+rt,2,1,S);
+  }
+  if(a.suit){ if(side){ P(12,15,1,2,'#f4f4f4'); P(11,15,1,4,shade(T,.18)); } else if(!back){ P(8,15,4,1,'#f4f4f4'); P(9,16,2,2,'#f4f4f4'); P(7,15,1,4,shade(T,.2)); P(12,15,1,4,shade(T,.2)); P(10,19,1,1,'#d4af37'); } }
+  // ---------- head ----------
+  const hx=side?6:5;
+  P(hx,5,side?9:10,9,S); P(hx,13,side?9:10,1,Sd);
+  g.clearRect(hx,5,1,1); g.clearRect(hx+(side?8:9),5,1,1); g.clearRect(hx,13,1,1); g.clearRect(hx+(side?8:9),13,1,1);
+  const st=a.style||'short';
+  if(back){
+    P(4,2,12,11,H); P(5,1,10,1,H); P(6,3,8,1,Hl); P(4,11,12,1,Hd); P(7,13,6,1,Sd);
+    if(st==='long'){ P(4,12,12,5,H); P(5,17,10,1,Hd); }
+  } else if(side){
+    P(5,2,10,4,H); P(6,1,8,1,H); P(5,6,4,6,H); P(13,6,2,2,H); P(7,3,5,1,Hl); P(5,11,3,1,Hd);
+    P(12,9,1,2,EYE); P(13,11,1,1,'#f3a6a0'); P(9,9,1,2,Sd);
+    if(a.glasses){ P(11,8,3,1,'#222'); P(11,9,1,2,'#222'); }
+    if(st==='long'){ P(5,12,4,6,H); }
+  } else {
+    P(4,2,12,5,H); P(5,1,10,1,H); P(4,7,2,4,H); P(14,7,2,4,H);
+    [5,6,8,9,11,13,14].forEach(x=>P(x,7,1,1,H)); P(7,3,4,1,Hl); P(4,10,1,1,Hd); P(15,10,1,1,Hd);
+    P(7,9,1,2,EYE); P(12,9,1,2,EYE); P(7,9,1,1,'#5a4a40'); P(12,9,1,1,'#5a4a40');
+    P(6,11,1,1,'#f3a6a0'); P(13,11,1,1,'#f3a6a0'); P(9,12,2,1,'#b5624f');
+    if(a.glasses){ P(6,8,3,1,'#222'); P(11,8,3,1,'#222'); P(9,9,2,1,'#222'); P(6,9,1,2,'#222'); P(13,9,1,2,'#222'); }
+    if(st==='long'){ P(3,7,2,10,H); P(15,7,2,10,H); P(3,16,2,1,Hd); P(15,16,2,1,Hd); }
+  }
+  if(st==='spiky'){ [6,9,12].forEach(x=>P(x,0,2,2,H)); P(5,1,10,1,H); }
+  if(st==='bun'){ P(8,-1,4,3,H); P(8,0,4,1,Hd); }
+  // ---------- outline ----------
+  const img=g.getImageData(0,0,SPR_W,SPR_H), d=img.data, op=i=>d[i*4+3]>0, out=new Uint8Array(SPR_W*SPR_H);
+  for(let y=0;y<SPR_H;y++) for(let x=0;x<SPR_W;x++){ const i=y*SPR_W+x; if(op(i)) continue;
+    if((x>0&&op(i-1))||(x<SPR_W-1&&op(i+1))||(y>0&&op(i-SPR_W))||(y<SPR_H-1&&op(i+SPR_W))) out[i]=1; }
+  for(let i=0;i<out.length;i++) if(out[i]){ d[i*4]=0x2a; d[i*4+1]=0x1d; d[i*4+2]=0x14; d[i*4+3]=255; }
+  g.putImageData(img,0,0);
+  return cv;
+}
+function spriteFor(a,pose,dir,f){
+  const k=[a.skin,a.hair,a.shirt,a.pants,a.style,a.glasses?1:0,a.suit?1:0,a.skirt?1:0,pose,dir,f].join('|');
+  let s=sprCache.get(k); if(!s){ s=buildSprite(a,pose,dir,f); sprCache.set(k,s); } return s;
+}
+// x,y: เท้า (ยืน) หรือระดับที่นั่ง (นั่ง/โซฟา)
+function drawChar(c,a,x,y,p={}){
+  let dir=p.dir||'down', flip=false;
+  if(dir==='left'){ dir='right'; flip=true; }
+  const pose=p.seated?'sit':p.sofa?'sofa':'stand';
+  let f=0;
+  if(pose==='stand') f=p.walk||0;
+  else if(pose==='sit' && dir==='up') f=p.typing?(p.bob?1:0):0;
+  const spr=spriteFor(a,pose,dir,f);
+  const X=Math.round(x), Y=Math.round(y);
+  let top;
+  if(pose==='stand'){ c.fillStyle='rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(X+.5,Y+.5,6,2,0,0,7); c.fill(); top=Y-28; }
+  else if(pose==='sit') top=Y-23-(p.typing?0:(p.bob||0));
+  else top=Y-25;
+  if(flip){ c.save(); c.translate(X*2+1,0); c.scale(-1,1); c.drawImage(spr,X-10,top); c.restore(); }
+  else c.drawImage(spr,X-10,top);
+}
+function avatarURL(a,dir='down'){
+  const c=document.createElement('canvas'); c.width=20; c.height=30;
+  const x=c.getContext('2d'); drawChar(x,a,10,28,{dir}); return c.toDataURL();
+}
+
+/* ================= MONITORS ================= */
+function monitor(x,y,w,h){
+  R(ctx,x-1,y-1,w+2,h+2,'#2a1d14'); R(ctx,x+w/2-3,y+h,6,4,'#2a1d14'); R(ctx,x+w/2-6,y+h+3,12,2,'#2a1d14');
+  R(ctx,x+w/2-2,y+h,4,3,'#3a3a48'); R(ctx,x+w/2-5,y+h+3,10,1,'#3a3a48');
+  R(ctx,x,y,w,h,'#2b2b38'); return [x+1,y+1,w-2,h-2];
+}
+function screenOff(s,t){ const [x,y,w,h]=s; R(ctx,x,y,w,h,'#24304a'); const px=(Math.floor(t*6)%(w*2)); const xx=px<w?px:2*w-px-1; R(ctx,x+Math.min(w-1,xx),y+Math.floor(h/2+Math.sin(t*2)*h/3),1,1,'#8fb3ff'); }
+function screenCode(s,t){
+  const [x,y,w,h]=s; R(ctx,x,y,w,h,'#1e2233');
+  const off=Math.floor(t*3); const pal=['#7fd1b9','#f2b134','#e07a9a','#8fb3ff','#c7c7d9'];
+  for(let i=0;i<Math.floor(h/2);i++){ const k=i+off; const ind=Math.floor(hash(k)*3)*2; const len=3+Math.floor(hash(k+99)*(w-ind-4));
+    R(ctx,x+1+ind,y+1+i*2,Math.min(len,w-2-ind),1,pal[Math.floor(hash(k+7)*5)]); }
+  if(Math.floor(t*2)%2) R(ctx,x+w-3,y+h-2,1,1,'#fff');
+}
+function screenTerm(s,t){
+  const [x,y,w,h]=s; R(ctx,x,y,w,h,'#101418');
+  const n=Math.floor(t*2)%(Math.floor(h/2)+3);
+  for(let i=0;i<Math.min(n,Math.floor(h/2));i++){ R(ctx,x+1,y+1+i*2,1,1,'#3fae6a'); R(ctx,x+3,y+1+i*2,Math.floor(3+hash(i+Math.floor(t/4))*(w-6)),1,'#9be7b0'); }
+}
+function screenTest(s,t){
+  const [x,y,w,h]=s; R(ctx,x,y,w,h,'#16241c');
+  const rows=Math.floor(h/3); const prog=(t*1.5)%(rows+2);
+  for(let i=0;i<rows;i++){ if(i>prog) break; const bad=hash(i+Math.floor(t/ (rows+2)*1.5)*13)<.15;
+    R(ctx,x+1,y+1+i*3,2,2,bad?'#ff5a5a':'#3fdc7a'); R(ctx,x+4,y+1+i*3,w-6-Math.floor(hash(i)*6),1,'#5b7a66'); }
+}
+function screenDesign(s,t){
+  const [x,y,w,h]=s; R(ctx,x,y,w,h,'#f7f3ee');
+  const hue=Math.floor(t*20)%360; ctx.fillStyle=`hsl(${hue},70%,60%)`; ctx.fillRect(x,y,w,3);
+  R(ctx,x+2,y+5,w/2-2,h-7,'#ffffff'); R(ctx,x+2,y+5,w/2-2,1,'#e0d6c8'); R(ctx,x+3,y+7,w/2-5,2,`hsl(${(hue+40)%360},60%,70%)`);
+  R(ctx,x+3,y+10,w/2-8,1,'#ccc'); R(ctx,x+3,y+12,w/2-10,1,'#ccc');
+  for(let i=0;i<4;i++){ ctx.fillStyle=`hsl(${(hue+i*60)%360},65%,60%)`; ctx.fillRect(x+w/2+2+i*3,y+6,2,2); }
+  const cx=x+w/2+3+Math.floor((Math.sin(t*1.3)+1)*(w/4-3)), cy=y+9+Math.floor((Math.cos(t*1.7)+1)*(h/2-6)/2);
+  R(ctx,cx,cy,1,2,'#222'); R(ctx,cx+1,cy+1,1,1,'#222');
+}
+function screenBoard(s,t){
+  const [x,y,w,h]=s; R(ctx,x,y,w,h,'#f4f6fb');
+  const cw=Math.floor((w-4)/3); const cols=['#ffd166','#f7a6c1','#9ee6c9'];
+  for(let k=0;k<3;k++){ R(ctx,x+1+k*(cw+1),y+1,cw,1,'#c9cfdc');
+    const n=1+Math.floor(hash(k+Math.floor(t/3))*3); for(let i=0;i<n;i++) R(ctx,x+1+k*(cw+1),y+3+i*3,cw,2,cols[k]); }
+}
+function drawStation(a,t){
+  const cx=cxOf(a.desk), on=a.state==='seated' && a.active;
+  if(a.screen==='code'){ const s1=monitor(cx-25,58,22,14), s2=monitor(cx+3,58,22,14); on?(screenCode(s1,t),screenTerm(s2,t)):(screenOff(s1,t),screenOff(s2,t)); }
+  if(a.screen==='test'){ const s1=monitor(cx-25,58,22,14), s2=monitor(cx+3,58,22,14); on?(screenTest(s1,t),screenTerm(s2,t+5)):(screenOff(s1,t),screenOff(s2,t)); }
+  if(a.screen==='design'){ const s1=monitor(cx-17,56,34,16); on?screenDesign(s1,t):screenOff(s1,t); }
+  if(a.screen==='board'){ const s1=monitor(cx-14,58,28,14); on?screenBoard(s1,t):screenOff(s1,t); }
+}
+function chairSeat(cx){ R(ctx,cx-7,95,14,8,'#2a1d14'); R(ctx,cx-6,96,12,6,'#4b4b5c'); R(ctx,cx-6,96,12,1,'#5d5d70'); R(ctx,cx-1,106,2,3,'#333'); R(ctx,cx-4,109,8,1,'#333'); }
+function chairBack(cx){ R(ctx,cx-7,99,14,8,'#2a1d14'); R(ctx,cx-6,100,12,6,'#3c3c4c'); R(ctx,cx-6,100,12,1,'#5a5a70'); R(ctx,cx-5,105,10,1,'#2e2e3a'); }
+
+/* ================= PROJECT / ROOMS ================= */
+let PID=decodeURIComponent((location.hash||'').slice(1));
+const EMBED=new URLSearchParams(location.search).has('embed');
+if(EMBED) document.body.classList.add('embed');
+window.addEventListener('hashchange',()=>location.reload());
+async function loadRooms(){
+  try{
+    const list=await (await fetch('/api/projects',{cache:'no-store'})).json();
+    list.forEach((p,i)=>{ if(!THEMES[p.theme]) p.theme=THEME_ORDER[i%THEME_ORDER.length]; });
+    ROOMS=list;
+    if(PID!=='overview' && !list.find(p=>p.id===PID)) PID=EMBED&&list[0]?list[0].id:'overview';
+    document.getElementById('tabs').innerHTML=`<a class="tab${PID==='overview'?' active':''}" href="#overview">🏙️ ภาพรวม</a>`+list.map(p=>`<a class="tab${p.id===PID?' active':''}" href="#${encodeURIComponent(p.id)}" style="${p.id===PID?`background:${THEMES[p.theme].accent};border-color:${shade(THEMES[p.theme].accent,-.3)}`:''}">🏢 ${esc(p.name)}</a>`).join('');
+  }catch(e){ ROOMS=[]; }
+}
+let ROOMS=[], roomBg=null;
+/* ================= STATE ================= */
+let realT=0, selected=null, S=null, connected=false, lastOk=0, firstLoad=true;
+const taken=new Map();
+const clientLog=[];
+const prevTaskStatus={};
+const hhmm = ms => { const d=new Date(ms); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+
+const agents = AGENTS.map((cfg,i)=>({ ...cfg, idx:i, x:cxOf(cfg.desk), y:SEAT_Y, dir:'up', state:'seated', path:[], target:null,
+  eff:{state:'idle'}, active:false, sig:'', bubbleAt:rand(2,6), idleT:0, idleLimit:rand(3,8), walkT:0, bubble:'', bubbleUntil:0,
+  logs:[], leaveVia:null, sofa:false, until:0, avatar:null }));
+agents.forEach(a=>{ a.avatar=avatarURL(a); taken.set('seat-'+a.id,a.id); });
+const byId = id => agents.find(a=>a.id===id);
+
+function log(a,text){ const e={ms:Date.now(), who:a?a.id:null, text}; clientLog.unshift(e); if(clientLog.length>60) clientLog.pop(); if(a){ a.logs.unshift(e); if(a.logs.length>25) a.logs.pop(); } }
+function say(a,text,dur=3.5){ a.bubble=text; a.bubbleUntil=realT+dur; }
+
+/* ---------- คุยกัน ---------- */
+const convos=[];
+const cut=(t,n=26)=>{ t=String(t||''); return t.length>n?t.slice(0,n-1)+'…':t; };
+function startConvo(a,b,atDesk){
+  if(convos.some(c=>c.a===a||c.b===a||c.a===b||c.b===b)) return;
+  let lines=pick(CHATS);
+  if(b.active && b.eff.task && Math.random()<.6) lines=[`${b.eff.task} ไปถึงไหนแล้ว`, cut(b.eff.doing||'กำลังลุยอยู่'), 'ติดอะไรบอกได้นะ', 'ได้เลย ขอบใจ 🙏'];
+  const c={a,b,lines,idx:-1,nextAt:realT+.4,atDesk};
+  convos.push(c);
+  if(atDesk) b.faceRight=true;
+  a.until=Infinity; if(!atDesk) b.until=Infinity;
+}
+function endConvo(c){
+  convos.splice(convos.indexOf(c),1);
+  c.b.faceRight=false;
+  if(c.a.state==='activity') c.a.until=realT+rand(.5,1.5);
+  if(!c.atDesk && c.b.state==='activity') c.b.until=realT+rand(1,2.5);
+}
+function convoTick(){
+  for(const c of [...convos]){
+    const okA=c.a.state==='activity', okB=c.atDesk?c.b.state==='seated':c.b.state==='activity';
+    if(!okA||!okB){ endConvo(c); continue; }
+    if(realT>c.nextAt){
+      c.idx++;
+      if(c.idx>=c.lines.length){ endConvo(c); continue; }
+      const sp=c.idx%2===0?c.a:c.b;
+      say(sp,'💬 '+c.lines[c.idx],2.1); sp.talkUntil=realT+2;
+      c.nextAt=realT+2.3;
+    }
+  }
+}
+function goBoardThenSeat(a){
+  const k=!taken.has('board')?'board':!taken.has('board2')?'board2':null;
+  if(!k){ goSeat(a); return; }
+  const sp=SPOTS[k];
+  walkTo(a,{...sp,checkTask:true,label:`📌 อ่านงาน${a.eff.task?' '+a.eff.task:'ใหม่'}`},k);
+  say(a,`👀 มีงานใหม่! ไปดูบอร์ดก่อน`,3);
+}
+
+/* ---------- เดิน ---------- */
+function pathTo(a,spot){
+  const pts=[];
+  if(a.leaveVia){ pts.push({...a.leaveVia}); a.leaveVia=null; }
+  const last=pts.length?pts[pts.length-1]:{x:a.x,y:a.y};
+  if(Math.abs(last.y-CORR)>.5) pts.push({x:last.x,y:CORR});
+  const ax=spot.via?spot.via.x:spot.x;
+  pts.push({x:ax,y:CORR});
+  if(spot.via) pts.push({...spot.via});
+  pts.push({x:spot.x,y:spot.y});
+  return pts;
+}
+function release(a){ for(const [k,v] of taken) if(v===a.id) taken.delete(k); }
+function walkTo(a,spot,key){ release(a); if(key) taken.set(key,a.id); a.sofa=false; a.target=spot; a.path=pathTo(a,spot); a.state='walking'; }
+function goSeat(a){ walkTo(a,{x:cxOf(a.desk),y:SEAT_Y,dir:'up',seat:true,label:'🪑 กลับโต๊ะ'},'seat-'+a.id); }
+function headingToSeat(a){ return a.state==='seated' || (a.state==='walking' && a.target && a.target.seat); }
+
+function startBreak(a){
+  const opts=[];
+  const add=(k,w)=>{ if(!taken.has(k)) for(let i=0;i<w;i++) opts.push(k); };
+  add('coffee',3); add('water',2); add(taken.has('sofa1')?'sofa2':'sofa1',3); add('board',a.id==='pm'?3:1); add('m1',1); add('m2',1);
+  const others=agents.filter(o=>o!==a && o.state==='seated' && !taken.has('visit-'+o.id));
+  if(others.length) opts.push('visit','visit');
+  if(!opts.length) return;
+  const k=pick(opts);
+  if(k==='visit'){
+    const o=pick(others);
+    walkTo(a,{x:cxOf(o.desk)+17,y:105,dir:'left',label:`💬 แวะคุยกับ${o.name}`,log:`แวะไปคุยกับ${o.name}`,visit:o.id},'visit-'+o.id);
+    o.expectVisitor=a;
+  } else walkTo(a,SPOTS[k],k);
+  log(a,a.target.log); say(a,a.target.label,2.5);
+}
+function arrive(a){
+  const s=a.target; a.dir=s.dir; a.path=[];
+  if(s.seat){ a.state='seated'; a.idleT=0; a.idleLimit=rand(6,14); a.bubbleAt=realT+1; return; }
+  a.state='activity'; a.sofa=!!s.sofa; a.leaveVia=s.via?{...s.via}:null;
+  if(s.checkTask){ a.until=realT+rand(3.5,5); say(a,s.label,4); return; }
+  a.until=realT+rand(8,16);
+  if(s.visit){ const o=byId(s.visit); if(o) o.expectVisitor=null; if(o && o.state==='seated'){ startConvo(a,o,true); return; } a.until=realT+2; say(a,'อ้าว ไม่อยู่ซะงั้น 😅',2.5); return; }
+  if(s.pair){ const o=agents.find(x=>x!==a && x.state==='activity' && x.target && x.target===SPOTS[s.pair]); if(o){ startConvo(o,a,false); return; } }
+  say(a,s.label,3.5);
+}
+
+/* ---------- แปลงข้อมูลจริงเป็นสถานะของน้อง ---------- */
+function taskById(id){ return S && S.tasks.find(t=>t.id===id); }
+function effective(a){
+  if(!S) return {state:'idle'};
+  const st=S.agents[a.id];
+  if(st && st.state!=='idle') return st;
+  const now=S.now, h=S.handoff||{}, r=S.review||{};
+  if(a.id==='pm'){
+    const hash=(h.commit||'').trim().slice(0,7);
+    if(/READY/i.test(h.status||'') && hash && !(r.round||'').includes(hash))
+      return {state:'waiting', task:(h.task.match(/TASK-\d+/)||[''])[0], doing:`📥 มีงานรอตรวจ: ${h.task}`, derived:true};
+    if(r.mtime && now-r.mtime<15*60000)
+      return {state:'reviewing', task:(r.round.match(/TASK-\d+/)||[''])[0], doing:`เพิ่งตรวจ ${r.round} → ${r.verdict}`, derived:true, updatedMs:r.mtime};
+  }
+  if(a.id==='dev' && !st){
+    const c=S.commits[0];
+    if(c && now-Date.parse(c.date)<10*60000) return {state:'working', task:(c.subject.match(/TASK-\d+/)||[''])[0], doing:`commit: ${c.subject}`, derived:true, updatedMs:Date.parse(c.date)};
+  }
+  return st || {state:'idle'};
+}
+function applyState(){
+  for(const a of agents){
+    const e=effective(a); a.eff=e;
+    const active=ACTIVE.has(e.state)||e.state==='waiting'||e.state==='blocked';
+    const sig=[e.state,e.task||'',e.doing||''].join('|');
+    if(sig!==a.sig){
+      if(!firstLoad){
+        if(active){ log(a,`${STATE_TH[e.state]||e.state}${e.task?' '+e.task:''}${e.doing?' · '+e.doing:''}`); say(a,bubbleText(a),4.5); }
+        else if(a.active) { log(a,'ว่างงานแล้ว 🙌'); say(a,'🙌 เสร็จแล้ว ไปพักก่อน',3); }
+      } else if(active) say(a,bubbleText(a),4.5);
+      a.sig=sig;
+    }
+    const newTask=active && !firstLoad && (!a.active || (e.task||'')!==(a.lastTask||''));
+    a.active=active;
+    if(active) a.lastTask=e.task||'';
+    const toBoard=a.target&&a.target.checkTask&&(a.state==='walking'||a.state==='activity');
+    if(newTask && ACTIVE.has(e.state)) { if(!toBoard) goBoardThenSeat(a); }
+    else if(active && !headingToSeat(a) && !toBoard) goSeat(a);
+  }
+  for(const t of S.tasks){
+    const was=prevTaskStatus[t.id];
+    if(was && was!==t.status){
+      log(null,`📋 ${t.id} ${was} → ${t.status}`);
+      if(t.status==='DONE') agents.forEach(a=>say(a,`🎉 ${t.id} เสร็จแล้ว!`,4));
+    }
+    prevTaskStatus[t.id]=t.status;
+  }
+  firstLoad=false;
+}
+function bubbleText(a){
+  const e=a.eff;
+  if(e.state==='blocked') return '⛔ '+(e.doing||'ติดอยู่ รอผู้ใช้ตัดสินใจ');
+  if(e.state==='waiting') return e.doing||'📥 มีงานรอตรวจ';
+  const icon={testing:'🧪',reviewing:'🔍',designing:'🎨',planning:'📝'}[e.state]||'⌨️';
+  return `${icon} ${e.task?e.task+' · ':''}${e.doing||STATE_TH[e.state]||'กำลังทำงาน'}`;
+}
+async function poll(){
+  try{
+    const r=await fetch('/api/state?p='+encodeURIComponent(PID),{cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
+    S=await r.json(); connected=true; lastOk=Date.now();
+    if(roomSign.textContent!==S.project.toUpperCase()){ roomSign.textContent=S.project.toUpperCase(); document.title='AI Office · '+S.project; }
+    applyState(); dirty=true;
+  }catch(e){ connected=false; }
+  renderConn();
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  convoTick();
+  for(const a of agents){
+    if(a.state==='walking'){
+      let move=36*dt;
+      while(move>0 && a.path.length){
+        const p=a.path[0], dx=p.x-a.x, dy=p.y-a.y, d=Math.hypot(dx,dy);
+        if(Math.abs(dx)>Math.abs(dy)) a.dir=dx>0?'right':'left'; else if(d>0) a.dir=dy>0?'down':'up';
+        if(d<=move){ a.x=p.x; a.y=p.y; a.path.shift(); move-=d; } else { a.x+=dx/d*move; a.y+=dy/d*move; move=0; }
+      }
+      a.walkT+=dt*7;
+      if(!a.path.length) arrive(a);
+    } else if(a.state==='activity'){
+      if(realT>a.until){ const wasTask=a.target&&a.target.checkTask; if(wasTask){ log(a,`อ่านงาน${a.eff.task?' '+a.eff.task:''} แล้ว กลับไปลุย 💪`); goSeat(a); } else if(a.active) goSeat(a); else if(Math.random()<.35) startBreak(a); else goSeat(a); }
+    } else if(a.state==='seated'){
+      if(a.active){
+        if(realT>a.bubbleAt && !convos.some(c=>c.b===a)){ a.bubbleAt=realT+rand(9,15); say(a,bubbleText(a),4.5); }
+      } else {
+        const v=a.expectVisitor; if(v && v.state==='walking' && v.target && v.target.visit===a.id){ a.idleT=0; continue; }
+        if(convos.some(c=>c.b===a)){ a.idleT=0; continue; }
+        a.idleT+=dt;
+        if(a.idleT>a.idleLimit){ a.idleT=0; a.idleLimit=rand(8,16); if(Math.random()<.75) startBreak(a); else say(a,pick(['☁️ ว่างอยู่ รองาน','👀 เช็ก TASKS.md แป๊บ','🎧 ฟังเพลงรอ']),3); }
+      }
+    }
+  }
+}
+
+/* ================= RENDER ================= */
+function statusText(a){
+  if(a.active) return bubbleText(a);
+  if(a.state==='walking') return a.target&&a.target.seat?'🚶 เดินกลับโต๊ะ':'🚶 '+(a.target?a.target.label:'เดินเล่น');
+  if(a.state==='activity') return a.target?a.target.label:'พักอยู่';
+  return '☁️ ว่างอยู่';
+}
+function render(){
+  ctx.drawImage(roomBg,0,0);
+  agents.forEach(a=>drawStation(a,realT+a.idx*3));
+  agents.forEach(a=>{ const cx=cxOf(a.desk); chairSeat(cx); if(a.state!=='seated') chairBack(cx); });
+  const list=[...agents].sort((p,q)=>p.y-q.y);
+  for(const a of list){
+    if(selected===a.id){
+      const pulse=(Math.sin(realT*5)+1)/2; ctx.strokeStyle=`rgba(255,224,138,${.6+.4*pulse})`; ctx.lineWidth=1;
+      const yy=a.state==='seated'?SEAT_Y+6:a.y; ctx.beginPath(); ctx.ellipse(Math.round(a.x)+.5,yy+.5,7,2.5,0,0,7); ctx.stroke();
+    }
+    if(a.state==='seated'){
+      const typing=a.active && a.eff.state!=='waiting' && a.eff.state!=='blocked';
+      const bob=typing?(Math.floor(realT*5+a.idx)%2):0;
+      const tk=realT<(a.talkUntil||0)?Math.floor(realT*6)%2:0;
+      drawChar(ctx,a,a.x,SEAT_Y,{dir:a.faceRight?'right':'up',seated:true,typing:typing&&!a.faceRight,bob:a.faceRight?tk:bob});
+      chairBack(cxOf(a.desk));
+      if(a.eff.state==='blocked'){ R(ctx,a.x-1,SEAT_Y-30,2,4,'#ff5a5a'); R(ctx,a.x-1,SEAT_Y-25,2,1,'#ff5a5a'); }
+    } else if(a.state==='walking'){
+      drawChar(ctx,a,a.x,a.y,{dir:a.dir,walk:[1,0,2,0][Math.floor(a.walkT)%4]});
+    } else { const tk=realT<(a.talkUntil||0)?Math.floor(realT*6)%2:0; drawChar(ctx,a,a.x,a.y-tk,{dir:a.dir,sofa:a.sofa}); }
+  }
+}
+
+/* ================= OVERLAY ================= */
+const overlay=document.getElementById('overlay'), stage=document.getElementById('stage');
+function addSign(text,x,y,cls){ const d=document.createElement('div'); d.className='sign '+cls; d.textContent=text; d.style.left=(x/W*100)+'%'; d.style.top=(y/H*100)+'%'; overlay.appendChild(d); }
+addSign('',192,23,'big'); const roomSign=overlay.lastChild;
+agents.forEach(a=>addSign(a.label,cxOf(a.desk),52,'small'));
+agents.forEach(a=>{
+  a.tagEl=document.createElement('div'); a.tagEl.className='tag'; a.tagEl.textContent=a.name; a.tagEl.onclick=()=>select(a.id);
+  a.bubEl=document.createElement('div'); a.bubEl.className='bubble';
+  overlay.appendChild(a.bubEl); overlay.appendChild(a.tagEl);
+});
+function placeOverlay(){
+  for(const a of agents){
+    const seated=a.state==='seated';
+    const ty=seated?SEAT_Y+6:a.y+2, hy=seated?SEAT_Y-23:a.sofa?a.y-25:a.y-29;
+    a.tagEl.style.left=(a.x/W*100)+'%'; a.tagEl.style.top=(ty/H*100)+'%';
+    a.tagEl.classList.toggle('sel',selected===a.id);
+    const timed=a.bubble && realT<a.bubbleUntil;
+    const txt=timed?a.bubble:(selected===a.id?statusText(a):'');
+    if(txt && a.bubEl.textContent!==txt) a.bubEl.textContent=txt;
+    a.bubEl.classList.toggle('show',!!txt);
+    a.bubEl.style.left=(a.x/W*100)+'%'; a.bubEl.style.top=((hy-1)/H*100)+'%';
+  }
+}
+new ResizeObserver(()=>stage.style.setProperty('--u',cv.clientWidth/W)).observe(cv);
+function hitAgent(ev){
+  const r=cv.getBoundingClientRect(); const x=(ev.clientX-r.left)/r.width*W, y=(ev.clientY-r.top)/r.height*H;
+  let best=null,bd=1e9;
+  for(const a of agents){ const ay=a.state==='seated'?SEAT_Y:a.y; if(Math.abs(x-a.x)<10 && y>ay-28 && y<ay+5){ const d=Math.abs(x-a.x)+Math.abs(y-(ay-12)); if(d<bd){bd=d;best=a;} } }
+  return best;
+}
+cv.addEventListener('click',ev=>{ if(EMBED){ try{ window.top.location.hash=PID; }catch(e){} return; } const a=hitAgent(ev); select(a?a.id:null); });
+cv.addEventListener('mousemove',ev=>{ cv.style.cursor=hitAgent(ev)?'pointer':'default'; });
+
+/* ================= PANELS ================= */
+let dirty=true;
+const teamEl=document.getElementById('team'), detailEl=document.getElementById('detail'), kanbanEl=document.getElementById('kanban'), feedEl=document.getElementById('feed'), connEl=document.getElementById('conn'), tipEl=document.getElementById('tip');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function dotColor(a){ const s=a.eff.state; return s==='blocked'?'#e5484d':s==='waiting'?'#d97757':a.active?'#3fae6a':'#c9b393'; }
+function select(id){ selected=(selected===id?null:id); renderPanels(true); }
+teamEl.innerHTML=agents.map(a=>`<button class="card" data-id="${a.id}"><img src="${a.avatar}" alt=""><div><div class="nm">${esc(a.name)}</div><div class="st"></div></div></button>`).join('');
+teamEl.querySelectorAll('.card').forEach(el=>el.onclick=()=>select(el.dataset.id));
+function ago(ms){ if(!ms) return ''; const m=Math.round((Date.now()-ms)/60000); return m<1?'เมื่อสักครู่':m<60?`${m} นาทีที่แล้ว`:`${Math.round(m/60)} ชม.ที่แล้ว`; }
+function renderConn(){
+  connEl.innerHTML=connected?`<span class="dot" style="background:#3fae6a"></span>เชื่อมกับโปรเจกต์แล้ว`:`<span class="dot" style="background:#e5484d"></span>ต่อ server ไม่ได้ (เปิดจากไอคอน AI Office)`;
+}
+function feedItems(){
+  const items=[...clientLog.map(e=>({...e}))];
+  if(S){
+    S.commits.slice(0,10).forEach(c=>items.push({ms:Date.parse(c.date), who:null, text:`💾 commit ${c.hash} · ${c.subject}`}));
+    if(S.review.mtime) items.push({ms:S.review.mtime, who:'pm', text:`🔍 ตรวจ ${S.review.round} → ${S.review.verdict}`});
+    if(S.test&&S.test.mtime) items.push({ms:S.test.mtime, who:'tester', text:`🧪 ทดสอบ ${S.test.task} → ${S.test.result}`});
+    if(S.handoff.mtime) items.push({ms:S.handoff.mtime, who:null, text:`📨 HANDOFF ${S.handoff.task} · ${S.handoff.status}`});
+  }
+  return items.sort((p,q)=>q.ms-p.ms).slice(0,14);
+}
+function renderPanels(force){
+  teamEl.querySelectorAll('.card').forEach(el=>{ const a=byId(el.dataset.id); el.classList.toggle('sel',selected===a.id);
+    el.querySelector('.st').innerHTML=`<span class="dot" style="background:${dotColor(a)}"></span>${esc(statusText(a))}`; });
+  const a=selected&&byId(selected);
+  if(!a){ if(force||detailEl.dataset.k!=='none'){ detailEl.dataset.k='none'; detailEl.innerHTML='<div class="hint">👆 กดที่น้องในห้อง<br>เพื่อดูว่ากำลังทำอะไรอยู่</div>'; } }
+  else {
+    const e=a.eff, t=e.task&&taskById(e.task), st=S&&S.agents[a.id];
+    const key=[a.id,a.sig,a.logs.length,Math.round((Date.now()-(e.updatedMs||0))/60000)].join('|');
+    if(force||detailEl.dataset.k!==key){
+      detailEl.dataset.k=key;
+      const prog=typeof e.progress==='number'?Math.max(0,Math.min(100,e.progress)):null;
+      detailEl.innerHTML=`<div class="head"><img src="${a.avatar}" alt=""><div><div class="role">${a.role}</div><div class="nm">${esc(a.name)}</div><div class="lbl">${esc(a.sub)}</div></div></div>
+        <div class="box"><div class="lbl">สถานะ</div><div style="font-weight:600"><span class="dot" style="background:${dotColor(a)}"></span>${esc(STATE_TH[e.state]||e.state)}</div>
+          ${e.task?`<div style="margin-top:6px"><b>${esc(e.task)}</b>${t?' · '+esc(t.title):''}</div>`:''}
+          ${e.doing?`<div style="margin-top:4px">${esc(e.doing)}</div>`:''}
+          ${prog!==null?`<div class="bar"><i style="width:${prog}%"></i></div><div class="lbl" style="margin-top:2px">${prog}%</div>`:''}
+          <div class="lbl" style="margin-top:6px">${st?`อัปเดตจากไฟล์สถานะ ${ago(st.updatedMs)}${st.stale?' (นานเกินไป ถือว่าว่าง)':''}`:e.derived?'ดูจาก .review / git อัตโนมัติ':`ยังไม่มีไฟล์ .office/status/${a.id}.json`}</div>
+          ${st&&st.error?`<div class="lbl" style="color:#c0392b">${esc(st.error)}</div>`:''}</div>
+        <div class="lbl" style="margin-bottom:4px">บันทึก (ตั้งแต่เปิดหน้านี้)</div>
+        <ul class="logs">${a.logs.length?a.logs.slice(0,10).map(x=>`<li><time>${hhmm(x.ms)}</time><span>${esc(x.text)}</span></li>`).join(''):'<li><span>ยังไม่มีบันทึก</span></li>'}</ul>`;
+    }
+  }
+  if(S && dirty){
+    dirty=false;
+    kanbanEl.innerHTML=COLS.map(c=>{ const list=S.tasks.filter(t=>c.key==='OTHER'?!['TODO','IN PROGRESS','IN REVIEW','DONE'].includes(t.status):t.status===c.key);
+      return `<div class="col"><h3>${c.label}<span>${list.length}</span></h3>${list.map(t=>{
+        const o=byId(t.owner)||agents.find(x=>x.active&&x.eff.task===t.id);
+        return `<div class="chip" style="--c:${c.color}"><div class="id">${t.id}${t.priority?` · ${esc(t.priority)}`:''}${o?`<span class="who"><img src="${o.avatar}" alt="">${esc(o.name.replace('น้อง ',''))}</span>`:''}</div>${esc(t.title)}${t.note?`<div class="lbl" style="font-size:11px">${esc(t.note)}</div>`:''}</div>`; }).join('')}</div>`; }).join('');
+    feedEl.innerHTML=feedItems().map(x=>{ const w=x.who&&byId(x.who); return `<li><time>${hhmm(x.ms)}</time><span>${w?`<b>${esc(w.name)}</b> `:''}${esc(x.text)}</span></li>`; }).join('')||'<li><span>ยังไม่มีกิจกรรม</span></li>';
+    const none=!Object.keys(S.agents).length;
+    tipEl.style.display=none?'block':'none';
+    if(!S.tasks.length) kanbanEl.innerHTML='<div class="hint" style="grid-column:1/-1">ยังไม่มีงานในห้องนี้ · บอก PM ว่าอยากทำอะไร แล้วงานจะขึ้นที่นี่</div>';
+  }
+  const d=new Date(); document.getElementById('clock').textContent=d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+/* ================= LOOP ================= */
+renderConn();
+let last=performance.now(), panelAt=0;
+loadRooms().then(()=>{
+  if(PID==='overview') return startOverview();
+  const room=ROOMS.find(p=>p.id===PID);
+  roomBg=bgFor(room?room.theme:'wood');
+  roomSign.style.color='#fff';
+  poll(); setInterval(poll,POLL_MS);
+  function frame(now){
+    const dt=Math.min(.05,(now-last)/1000); last=now; realT+=dt;
+    update(dt); render(); placeOverlay();
+    if(realT>panelAt){ panelAt=realT+.5; renderPanels(false); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+});
+
+/* ================= HQ: ออฟฟิศรวมทุกทีม ================= */
+function startOverview(){
+  document.getElementById('roomWrap').style.display='none';
+  document.getElementById('ovWrap').style.display='block';
+  document.querySelector('.foot').textContent='ออฟฟิศรวมทุกทีม · ขยับจริงตามงาน · กดที่ชื่อน้องเพื่อดูว่าทำอะไรอยู่';
+  document.title='AI Office · ภาพรวม';
+
+  /* ---------- โปรเจกต์ / ขนาดแผนที่ ---------- */
+  const P=ROOMS.length;
+  ROOMS.forEach((p,i)=>{ p.idx=i; p.short=p.short||String(p.name).split(/\s+/)[0]; p.color=THEMES[p.theme].accent; });
+  const HW=640, ROWS=Math.max(1,Math.ceil(P/2)), FACE=30, CORH=22;
+  const TOPH=132, MIDY=TOPH+CORH, MIDH=Math.max(206,FACE+14+ROWS*108), C2=MIDY+MIDH, BOTY=C2+CORH, BOTH=136, HH=BOTY+BOTH;
+  const hq=document.getElementById('hq'); hq.width=HW; hq.height=HH;
+  const hctx=hq.getContext('2d');
+  const stageEl=document.getElementById('hqStage'), ovl=document.getElementById('hqOverlay');
+  new ResizeObserver(()=>stageEl.style.setProperty('--u',hq.clientWidth/HW)).observe(hq);
+
+  const ROOMDEF=[
+    {k:'brief', label:'BRIEFING ROOM', x:0,   y:0,    w:208, h:TOPH, doors:[['b',104]]},
+    {k:'meet',  label:'MEETING ROOM',  x:208, y:0,    w:224, h:TOPH, doors:[['b',320]]},
+    {k:'pm',    label:'PM OFFICE',     x:432, y:0,    w:128, h:TOPH, doors:[['b',496]]},
+    {k:'boss',  label:'BOSS ROOM',     x:560, y:0,    w:80,  h:TOPH, doors:[['b',600]]},
+    {k:'work',  label:'WORKSPACE',     x:0,   y:MIDY, w:432, h:MIDH, doors:[['t',108],['t',324],['b',108],['b',324]]},
+    {k:'cmd',   label:'TASK BOARD',    x:432, y:MIDY, w:208, h:MIDH, doors:[['b',536]]},
+    {k:'lounge',label:'LOUNGE',        x:0,   y:BOTY, w:176, h:BOTH, doors:[['t',152]]},
+    {k:'pantry',label:'PANTRY',        x:176, y:BOTY, w:256, h:BOTH, doors:[['t',304]]},
+    {k:'server',label:'GAME ROOM',     x:432, y:BOTY, w:208, h:BOTH, doors:[['t',536]]},
+  ];
+
+  /* ---------- ตารางเดิน (cell 4px) ---------- */
+  const CS=4, GW=HW/CS, GH=Math.ceil(HH/CS);
+  const block=new Uint8Array(GW*GH);
+  function blockRect(x,y,w,h,v=1){ for(let gy=Math.max(0,Math.floor(y/CS));gy<Math.min(GH,Math.ceil((y+h)/CS));gy++) for(let gx=Math.max(0,Math.floor(x/CS));gx<Math.min(GW,Math.ceil((x+w)/CS));gx++) block[gy*GW+gx]=v; }
+  const unblockAt=(x,y)=>{ const gx=Math.floor(x/CS), gy=Math.floor(y/CS); if(gx>=0&&gy>=0&&gx<GW&&gy<GH) block[gy*GW+gx]=0; };
+
+  const SP={}; const addSpot=(key,o)=>{ SP[key]={key,...o}; return SP[key]; };
+  const ROLE_ORDER=['ui','dev','tester'];
+  const ROLE_LABEL={pm:'PM',ui:'UI',dev:'Dev',tester:'QA'};
+  const desks=[];
+
+  /* ---------- ชุดวาดสไตล์ RPG ---------- */
+  const bgc=document.createElement('canvas'); bgc.width=HW; bgc.height=HH; const c=bgc.getContext('2d');
+  seed=21;
+  const OL='#2a1d14';
+  const r_=(x,y,w,h,col)=>R(c,x,y,w,h,col);
+  const box=(x,y,w,h,col)=>{ r_(x,y,w,h,OL); r_(x+1,y+1,w-2,h-2,col); };
+  const woodFloor=(x,y,w,h,base='#b9763f',line='#9c5f30',hi='#c98a50')=>{ r_(x,y,w,h,base); for(let yy=y,row=0;yy<y+h;yy+=6,row++){ r_(x,yy,w,1,line); for(let xx=x+((row*13)%24)-24;xx<x+w;xx+=24) if(xx>=x) r_(xx,yy,1,Math.min(6,y+h-yy),line); } for(let i=0;i<w*h/90;i++) r_(x+srnd()*w,y+srnd()*h,2,1,hi); };
+  const vWood=(x,y,w,h)=>{ r_(x,y,w,h,'#a8693a'); for(let xx=x;xx<x+w;xx+=6) r_(xx,y,1,h,'#8f5530'); for(let i=0;i<w*h/80;i++) r_(x+srnd()*w,y+srnd()*h,1,2,'#b97a46'); };
+  const creamTile=(x,y,w,h)=>{ r_(x,y,w,h,'#ece3da'); for(let yy=y;yy<y+h;yy+=12) r_(x,yy,w,1,'#ddd2c7'); for(let xx=x;xx<x+w;xx+=12) r_(xx,y,1,h,'#ddd2c7'); for(let yy=y+6;yy<y+h;yy+=12) for(let xx=x+6;xx<x+w;xx+=12){ r_(xx-1,yy,3,1,'#d6c9bc'); r_(xx,yy-1,1,3,'#d6c9bc'); } };
+  const carpet=(x,y,w,h,col,dot)=>{ r_(x,y,w,h,col); for(let yy=y+3;yy<y+h-2;yy+=5) for(let xx=x+3+((yy/5)%2)*2;xx<x+w-2;xx+=5) r_(xx,yy,1,1,dot); };
+  const darkTile=(x,y,w,h,a,b,sz=14)=>{ r_(x,y,w,h,a); for(let yy=y;yy<y+h;yy+=sz) r_(x,yy,w,1,b); for(let xx=x;xx<x+w;xx+=sz) r_(xx,y,1,h,b); };
+  const NAVY='#34476a', NAVYD='#26334b', CAP='#1c2638', CAPH='#3c5178';
+  const face=(x,y,w,h=FACE)=>{ r_(x,y,w,h,NAVY); r_(x,y+h-3,w,3,NAVYD); for(let xx=x+10;xx<x+w;xx+=22) r_(xx,y+4,1,h-8,'#3a4e74'); };
+  const plant=(x,yb)=>{ box(x-5,yb-7,10,7,'#f2f2f2'); r_(x-4,yb-6,8,1,'#ffffff'); r_(x-4,yb-2,8,1,'#d8d8d8');
+    const L=[[-1,-20],[-6,-16],[4,-17],[-8,-11],[6,-12],[-3,-13],[2,-11]]; L.forEach(([dx,dy])=>{ r_(x+dx-1,yb+dy-1,5,8,OL); }); L.forEach(([dx,dy],i)=>{ r_(x+dx,yb+dy,3,6,i%2?'#3f8f3f':'#5cb85c'); r_(x+dx+1,yb+dy+1,1,3,'#8fd18f'); }); };
+  const shelf=(x,y,w,h)=>{ box(x,y,w,h,'#d9b27a'); r_(x+1,y+1,w-2,2,'#ecc993'); const rows=Math.floor((h-4)/9);
+    for(let s=0;s<rows;s++){ const yy=y+3+s*9; r_(x+2,yy,w-4,8,'#a87b47'); r_(x+2,yy+7,w-4,1,'#7d5a33'); let xx=x+3; while(xx<x+w-4){ const bw=2+Math.floor(hash(xx*7+yy)*2), bh=4+Math.floor(hash(xx+yy*3)*3); if(hash(xx*3+yy*11)>.25) r_(xx,yy+7-bh,bw,bh,['#c0392b','#2a9d8f','#f2b134','#3b6fd8','#e07a9a','#6b4fa0','#f4f1ea'][Math.floor(hash(xx+yy)*7)]); xx+=bw+(hash(xx*5)>.8?2:0); } } };
+  const deskD=(x,y,w,top='#a0602f',front='#7a4522')=>{ r_(x,y,w,20,OL); r_(x+1,y+1,w-2,11,top); r_(x+1,y+1,w-2,1,shade(top,.25)); r_(x+1,y+12,w-2,7,front); r_(x+1,y+18,w-2,1,shade(front,-.3)); r_(x+2,y+20,3,4,OL); r_(x+w-5,y+20,3,4,OL); r_(x+3,y+20,1,3,'#4a2a14'); r_(x+w-4,y+20,1,3,'#4a2a14'); };
+  const kb=(x,y)=>{ box(x,y,14,4,'#e9e9ef'); r_(x+2,y+1,10,1,'#c9c9d4'); };
+  const mug=(x,y,col='#ffffff')=>{ box(x,y,5,5,col); r_(x+5,y+1,1,3,OL); r_(x+1,y+1,3,1,'#6b3e1f'); };
+  const stoolTop=(x,y)=>{ c.fillStyle=OL; c.beginPath(); c.ellipse(x+.5,y+.5,5,3.5,0,0,7); c.fill(); c.fillStyle='#d8b98a'; c.beginPath(); c.ellipse(x+.5,y,4,2.5,0,0,7); c.fill(); r_(x-2,y-1,3,1,'#ecd3aa'); };
+  const picture=(x,y,w,h)=>{ box(x,y,w,h,'#8a5a2b'); r_(x+2,y+2,w-4,h-4,'#9fd8ff'); r_(x+2,y+h-6,w-4,4,'#5aa457'); for(let i=0;i<w-4;i+=5) r_(x+2+i,y+h-8-Math.floor(hash(i+x)*4),5,3,'#e8f4ff'); r_(x+w-9,y+4,3,3,'#ffd166'); };
+  const clock=(x,y)=>{ c.fillStyle=OL; c.beginPath(); c.arc(x,y,6,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(x,y,5,0,7); c.fill(); r_(x,y-3,1,4,OL); r_(x,y,3,1,OL); };
+  const win=(x,y,w,h)=>{ box(x,y,w,h,'#9fd8ff'); r_(x+1,y+h-5,w-2,4,'#5aa457'); r_(x+w/2,y+1,1,h-2,OL); r_(x+2,y+2,5,2,'#fff'); };
+  const boxes=(x,y)=>{ box(x,y+8,14,10,'#d2a463'); r_(x+1,y+12,12,1,'#b88a4c'); box(x+14,y+10,12,8,'#c99a58'); box(x+4,y,12,9,'#d9ad6c'); r_(x+5,y+4,10,1,'#b88a4c'); };
+
+  // corridors (ไม้แนวตั้งแบบในรูป)
+  vWood(0,TOPH,HW,CORH); vWood(0,C2,HW,CORH);
+  // floors
+  carpet(0,0,208,TOPH,'#6c5f93','#7a6ca2');
+  carpet(208,0,224,TOPH,'#557aa8','#5f86b5');
+  woodFloor(432,0,128,TOPH,'#9d5f33','#81492a','#ad6d3d');
+  carpet(560,0,80,TOPH,'#7a2e3a','#8a3a46');
+  woodFloor(0,MIDY,432,MIDH);
+  woodFloor(432,MIDY,208,MIDH,'#b07a4a','#93623a','#c08a58');
+  carpet(0,BOTY,176,BOTH,'#557aa8','#5f86b5');
+  creamTile(176,BOTY,256,BOTH);
+  carpet(432,BOTY,208,BOTH,'#3f7a5a','#4a8a67');
+  // wall faces (กรมท่า)
+  [[0,0,640],[0,MIDY,640],[0,BOTY,640]].forEach(([x,y,w])=>face(x,y,w));
+  blockRect(0,0,HW,FACE); blockRect(0,MIDY,HW,FACE-6); blockRect(0,BOTY,HW,FACE-6);
+  // walls + doors (cap มองจากด้านบน)
+  ROOMDEF.forEach(r=>{
+    const segs=[['t',r.x,r.y,r.w,4],['b',r.x,r.y+r.h-4,r.w,4],['l',r.x,r.y,4,r.h],['r',r.x+r.w-4,r.y,4,r.h]];
+    segs.forEach(([side,x,y,w,h])=>{
+      const ds=r.doors.filter(d=>d[0]===side).map(d=>d[1]);
+      const wall=(x0,w0)=>{ if(w0<=0) return; r_(x0,y,w0,h,CAP); r_(x0,y,w0,1,CAPH); blockRect(x0,y,w0,h); };
+      if(!ds.length){ if(side==='l'||side==='r'){ r_(x,y,w,h,CAP); r_(x+1,y,1,h,CAPH); blockRect(x,y,w,h); } else wall(x,w); return; }
+      let cur=x; ds.sort((a,b)=>a-b).forEach(dx=>{ const s=dx-13; wall(cur,s-cur); cur=s+26; }); wall(cur,x+w-cur);
+    });
+    // เปิดช่องประตูทะลุผนัง + วาดวงกบ
+    r.doors.forEach(([side,dx])=>{ if(side==='t'){ blockRect(dx-11,r.y,22,FACE+2,0); vWood(dx-12,r.y,24,FACE); r_(dx-14,r.y,2,FACE,CAP); r_(dx+12,r.y,2,FACE,CAP); r_(dx-14,r.y,28,2,CAP); } });
+  });
+  // ประตูด้านล่างของห้องบน → ทางเดิน (ทำให้ช่องผนังเห็นชัด)
+  ROOMDEF.forEach(r=>r.doors.forEach(([side,dx])=>{ if(side==='b'){ r_(dx-13,r.y+r.h-4,26,4,'#a8693a'); r_(dx-15,r.y+r.h-6,2,6,CAP); r_(dx+13,r.y+r.h-6,2,6,CAP); } }));
+
+  /* --- BRIEFING --- */
+  box(54,3,100,24,'#3a3a48'); r_(56,5,96,20,'#f7f7fb'); r_(100,0,8,3,'#888');
+  const BRIEF=[];
+  [50,70,90,110].forEach((y,ri)=>[30,52,74,134,156,178].forEach((x,ci)=>{ stoolTop(x,y);  BRIEF.push(addSpot(`brief${ri}_${ci}`,{x,y:y+1,dir:'up',seated:true,label:'📽️ ฟังบรีฟงาน',log:'เข้าห้องบรีฟ',room:'brief'})); }));
+  plant(12,TOPH-6); plant(196,TOPH-6); plant(104,44);
+  /* --- MEETING --- */
+  picture(288,5,56,20); clock(372,14);
+  r_(250,52,140,34,OL); r_(251,53,138,24,'#a0602f'); r_(251,53,138,1,'#bb7a45'); r_(251,77,138,8,'#7a4522'); blockRect(250,52,140,36);
+  [[266,58],[300,62],[340,57],[364,64]].forEach(([x,y])=>{ box(x,y,9,7,'#fff'); r_(x+2,y+2,5,1,'#bbb'); r_(x+2,y+4,4,1,'#bbb'); }); box(318,58,14,9,'#9aa0a6'); r_(320,60,10,5,'#cfe8ff');
+  [264,288,312,336,360,384].forEach((x,i)=>{
+    stoolTop(x,45);
+    stoolTop(x,96);
+    addSpot(`meetT${i}`,{x,y:46,dir:'down',seated:true,pair:`meetB${i}`,label:'🗣️ เข้าห้องประชุม',log:'แวะห้องประชุม',room:'meet'});
+    addSpot(`meetB${i}`,{x,y:97,dir:'up',seated:true,pair:`meetT${i}`,label:'🗣️ เข้าห้องประชุม',log:'แวะห้องประชุม',room:'meet'});
+  });
+  plant(220,TOPH-6); plant(420,TOPH-6);
+  /* --- PM OFFICE --- */
+  win(446,5,22,18); win(474,5,22,18); win(510,5,22,18);
+  const pmW=Math.min(42,Math.floor(112/Math.max(P,1))-6);
+  ROOMS.forEach((p,i)=>{
+    const x=440+i*(pmW+6), y=48;
+    deskD(x,y,pmW,'#8a5530','#5e3a1e'); blockRect(x,y-12,pmW,36); mug(x+3,y+4);
+    box(x+pmW/2-9,26,18,6,p.color);
+    desks.push({x,y,w:pmW,role:'pm',proj:p,mon:[[x+pmW/2-9,y-10,18,12]]});
+    addSpot(`seat_${p.id}_pm`,{x:x+pmW/2,y:y+38,dir:'up',seat:true,label:'🪑 กลับโต๊ะ',room:'pm'});
+  });
+  plant(446,TOPH-6); plant(548,TOPH-6);
+  /* --- BOSS ROOM (พี่ป่าน) --- */
+  shelf(600,2,36,32); picture(566,5,28,18); blockRect(560,0,80,36);
+  r_(570,48,62,24,OL); r_(571,49,60,13,'#5e3a1e'); r_(571,49,60,1,'#7a4f2c'); r_(571,62,60,9,'#3f2614'); r_(571,70,60,1,'#2a1a0e'); r_(572,72,3,4,OL); r_(627,72,3,4,OL); blockRect(570,36,62,40);
+  box(576,52,12,8,'#f4f1ea'); r_(578,54,8,1,'#bbb'); r_(578,56,6,1,'#bbb'); box(612,53,14,6,'#d4af37'); r_(614,55,10,2,'#8a6d1e'); mug(592,52,'#ffffff');
+  desks.push({x:580,y:48,w:42,role:'boss',proj:null,mon:[[592,38,18,12]]});
+  r_(589,86,22,6,OL); r_(590,84,20,7,'#1f1f27'); r_(590,84,20,1,'#3a3a48');
+  addSpot('seat_boss',{x:600,y:88,dir:'up',seat:true,label:'🪑 กลับห้อง',room:'boss'});
+  r_(580,102,42,14,OL); r_(581,103,40,5,'#4a3f6e'); r_(581,108,40,7,'#6b5b9a'); r_(581,103,4,12,'#4a3f6e'); r_(617,103,4,12,'#4a3f6e'); blockRect(580,102,42,8);
+  addSpot('bossGuest0',{x:592,y:118,dir:'up',sofa:true,pair:'bossGuest1',label:'🗂️ เข้าพบพี่ป่าน',log:'แวะห้องพี่ป่าน',room:'boss'});
+  addSpot('bossGuest1',{x:610,y:118,dir:'up',sofa:true,pair:'bossGuest0',label:'🗂️ เข้าพบพี่ป่าน',log:'แวะห้องพี่ป่าน',room:'boss'});
+  plant(634,TOPH-6);
+  /* --- WORKSPACE --- */
+  shelf(150,MIDY+2,52,26); shelf(230,MIDY+2,52,26); blockRect(150,MIDY,132,30);
+  boxes(206,MIDY+12);
+  ROOMS.forEach((p,i)=>{
+    const col=i%2, row=Math.floor(i/2), px=10+col*214, py=MIDY+FACE+8+row*108;
+    r_(px,py,204,98,shade(p.color,-.25)); r_(px+2,py+2,200,94,shade(p.color,.62)); for(let yy=py+6;yy<py+94;yy+=5) for(let xx=px+5+((yy/5)%2)*2;xx<px+200;xx+=5) r_(xx,yy,1,1,shade(p.color,.5));
+    box(px+4,py+3,46,10,p.color); p.pod={x:px,y:py};
+    ROLE_ORDER.forEach((role,k)=>{
+      const dx=px+8+k*65, dy=py+22;
+      deskD(dx,dy,58); blockRect(dx,dy-14,58,38); kb(dx+22,dy+7); mug(dx+4,dy+3,['#ffffff','#ffd166','#7cc6f2'][k]);
+      const mons= role==='ui'? [[dx+16,dy-12,26,14]] : [[dx+6,dy-11,21,12],[dx+31,dy-11,21,12]];
+      desks.push({x:dx,y:dy,w:58,role,proj:p,mon:mons});
+      addSpot(`seat_${p.id}_${role}`,{x:dx+29,y:dy+40,dir:'up',seat:true,label:'🪑 กลับโต๊ะ',room:'work'});
+    });
+  });
+  plant(8,C2-6); plant(424,C2-6);
+  { const fy=MIDY+FACE+8+ROWS*108; if(C2-fy>40){
+    box(16,C2-44,16,30,'#eef2f5'); box(17,C2-56,14,13,'#7cc6f2'); r_(19,C2-54,4,7,'#a9dcf7'); blockRect(16,C2-56,16,42); addSpot('cooler',{x:42,y:C2-22,dir:'left',label:'💧 เติมน้ำ',log:'ไปเติมน้ำ',room:'work'});
+    box(392,C2-36,30,20,'#d0d4da'); r_(394,C2-34,26,6,'#9aa0a6'); r_(397,C2-25,20,3,'#fff'); r_(416,C2-31,2,2,'#3fdc7a'); blockRect(392,C2-36,30,22); addSpot('printer',{x:380,y:C2-24,dir:'right',label:'🖨️ ปริ้นเอกสาร',log:'ไปปริ้นเอกสาร',room:'work'});
+    [[180,fy+18],[216,fy+26],[252,fy+16]].forEach(([x,y],i)=>{ const col=['#f2b134','#7cc6f2','#e07a9a'][i]; c.fillStyle=OL; c.beginPath(); c.ellipse(x+.5,y+.5,9,6,0,0,7); c.fill(); c.fillStyle=col; c.beginPath(); c.ellipse(x+.5,y,8,5,0,0,7); c.fill(); r_(x-4,y-3,5,2,shade(col,.35)); addSpot('bean'+i,{x,y:y+3,dir:'down',sofa:true,label:'🛋️ นั่งบีนแบ็ก',log:'ไปนั่งบีนแบ็ก',room:'work'}); });
+  } }
+  /* --- TASK BOARD (บอร์ดงานใหญ่ติดผนัง) --- */
+  const BRD={x:442,y:MIDY+4,w:190,h:86,lbl:30};
+  BRD.colW=Math.floor((BRD.w-BRD.lbl-4)/5); BRD.rowH=Math.floor((BRD.h-14)/Math.max(P,1));
+  r_(BRD.x-3,BRD.y-3,BRD.w+6,BRD.h+6,OL); r_(BRD.x-2,BRD.y-2,BRD.w+4,BRD.h+4,'#8a5a2b'); r_(BRD.x,BRD.y,BRD.w,BRD.h,'#fbfaf6');
+  COLS.forEach((col,ci)=>{ const cx=BRD.x+BRD.lbl+ci*BRD.colW; r_(cx+1,BRD.y+2,BRD.colW-2,8,col.color); if(ci) r_(cx,BRD.y+11,1,BRD.h-13,'#e2ddd2'); });
+  ROOMS.forEach((p,i)=>{ const ry=BRD.y+12+i*BRD.rowH; if(i) r_(BRD.x+2,ry-1,BRD.w-4,1,'#e2ddd2'); box(BRD.x+2,ry+1,BRD.lbl-4,9,p.color); });
+  r_(BRD.x+40,BRD.y+BRD.h+3,110,3,OL); r_(BRD.x+41,BRD.y+BRD.h+3,108,2,'#9aa0a6'); [['#e74c3c',60],['#3b6fd8',70],['#2f8a52',80]].forEach(([cl,x])=>r_(BRD.x+x,BRD.y+BRD.h+2,6,2,cl));
+  blockRect(BRD.x-3,MIDY,BRD.w+6,BRD.h+10);
+  const CMD=[]; [456,494,532,570,608].forEach((x,i)=>CMD.push(addSpot(`cmd${i}`,{x,y:MIDY+106,dir:'up',label:'📊 ดูบอร์ดงาน',log:'ไปดูบอร์ดงาน',room:'cmd'})));
+  // โต๊ะวางแผนเล็กๆ
+  c.fillStyle=OL; c.beginPath(); c.ellipse(536.5,MIDY+150.5,16,9,0,0,7); c.fill(); c.fillStyle='#c9a46b'; c.beginPath(); c.ellipse(536.5,MIDY+150,15,8,0,0,7); c.fill(); r_(530,MIDY+147,8,5,'#fff'); r_(540,MIDY+148,5,4,'#ffd166'); blockRect(521,MIDY+142,31,17);
+  stoolTop(510,MIDY+152); stoolTop(563,MIDY+152);
+  addSpot('plan0',{x:510,y:MIDY+153,dir:'right',seated:true,pair:'plan1',label:'🗂️ นั่งวางแผนงาน',log:'นั่งคุยวางแผนงาน',room:'cmd'});
+  addSpot('plan1',{x:563,y:MIDY+153,dir:'left',seated:true,pair:'plan0',label:'🗂️ นั่งวางแผนงาน',log:'นั่งคุยวางแผนงาน',room:'cmd'});
+  plant(446,C2-6); plant(628,C2-6); plant(446,MIDY+128);
+  /* --- LOUNGE --- */
+  shelf(8,BOTY+2,34,26); picture(48,BOTY+5,28,18); shelf(84,BOTY+2,40,26);
+  r_(22,BOTY+FACE+6,132,BOTH-FACE-20,'#4a6a95'); r_(24,BOTY+FACE+8,128,BOTH-FACE-24,'#5f84b3');
+  // sofa
+  r_(36,BOTY+30,92,18,OL); r_(37,BOTY+31,90,6,'#a63e5e'); r_(37,BOTY+37,90,10,'#c4567a'); r_(37,BOTY+31,6,16,'#a63e5e'); r_(121,BOTY+31,6,16,'#a63e5e'); r_(44,BOTY+38,76,1,'#d97096'); blockRect(36,BOTY+28,92,9); blockRect(36,BOTY+28,7,20); blockRect(121,BOTY+28,7,20);
+  [56,82,108].forEach((x,i)=>addSpot(`sofa${i}`,{x,y:BOTY+48,dir:'down',sofa:true,label:'😌 นั่งพักบนโซฟา',log:'ไปนั่งพักที่โซฟา',room:'lounge'}));
+  // armchairs + table (คุยกัน)
+  box(66,BOTY+80,44,22,'#c9a46b'); r_(67,BOTY+81,42,2,'#ddb985'); box(72,BOTY+84,12,9,'#d8dde3'); r_(74,BOTY+85,8,6,'#9fd8ff'); mug(94,BOTY+86); blockRect(66,BOTY+80,44,24);
+  [[44,BOTY+92,'right'],[132,BOTY+92,'left']].forEach(([x,y,d],i)=>{ r_(x-9,y-14,18,20,OL); r_(x-8,y-13,16,18,'#a63e5e'); r_(x-6,y-8,12,10,'#c4567a'); blockRect(x-9,y-14,18,6);
+    addSpot(`arm${i}`,{x,y:y+3,dir:d,sofa:true,pair:`arm${1-i}`,label:'☕ นั่งคุยในเลานจ์',log:'นั่งพักที่อาร์มแชร์',room:'lounge'}); });
+  plant(12,HH-6); plant(166,HH-6);
+  /* --- PANTRY --- */
+  // vending machine
+  r_(186,BOTY+2,26,44,OL); r_(187,BOTY+3,24,42,'#dfe6ee'); r_(189,BOTY+6,15,28,'#3b4a66'); for(let s=0;s<4;s++) for(let k=0;k<3;k++) r_(191+k*4,BOTY+8+s*7,3,5,['#e74c3c','#3498db','#f1c40f','#2ecc71'][(s+k)%4]); r_(205,BOTY+10,4,10,'#9aa0a6'); r_(190,BOTY+37,14,5,'#2b2b38'); blockRect(186,BOTY+2,26,46);
+  // water cooler
+  box(218,BOTY+22,14,24,'#eef2f5'); box(219,BOTY+8,12,15,'#9fd3f5'); r_(221,BOTY+10,3,9,'#c9ebff'); r_(222,BOTY+30,6,3,'#3b6fd8'); blockRect(218,BOTY+8,14,40);
+  clock(262,BOTY+14); r_(282,BOTY+30,10,14,OL); r_(283,BOTY+31,8,12,'#8a9099');
+  // counter
+  r_(306,BOTY+20,64,26,OL); r_(307,BOTY+21,62,10,'#f4f1ea'); r_(307,BOTY+31,62,14,'#e0b878'); for(let k=0;k<4;k++) r_(309+k*15,BOTY+35,12,1,'#c49a5a'); box(318,BOTY+12,14,12,'#3d3d48'); r_(322,BOTY+19,6,4,'#222'); r_(344,BOTY+22,12,6,'#b8c2cf'); blockRect(306,BOTY+12,64,36);
+  // fridge
+  r_(380,BOTY+2,26,46,OL); r_(381,BOTY+3,24,44,'#c9ced6'); r_(381,BOTY+20,24,1,OL); r_(401,BOTY+8,2,8,'#8a9099'); r_(401,BOTY+24,2,12,'#8a9099'); r_(382,BOTY+4,3,40,'#dfe3e8'); blockRect(380,BOTY+2,26,48);
+  addSpot('vend',{x:199,y:BOTY+56,dir:'up',label:'🥤 ซื้อน้ำ',log:'ไปกดน้ำที่ตู้',room:'pantry'});
+  addSpot('cooler2',{x:225,y:BOTY+56,dir:'up',label:'💧 เติมน้ำ',log:'ไปเติมน้ำ',room:'pantry'});
+  addSpot('coffee1',{x:325,y:BOTY+56,dir:'up',label:'☕ ชงกาแฟ',log:'ไปชงกาแฟ',room:'pantry'});
+  addSpot('coffee2',{x:350,y:BOTY+56,dir:'up',label:'🍪 หาขนมกิน',log:'แวะหาขนม',room:'pantry'});
+  addSpot('fridge',{x:393,y:BOTY+58,dir:'up',label:'🧃 เปิดตู้เย็น',log:'เปิดตู้เย็นหาน้ำ',room:'pantry'});
+  r_(236,BOTY+84,104,24,OL); r_(237,BOTY+85,102,15,'#c9a46b'); r_(237,BOTY+85,102,1,'#ddb985'); r_(237,BOTY+100,102,7,'#a7834f'); blockRect(236,BOTY+84,104,26);
+  box(252,BOTY+88,8,6,'#fff'); box(300,BOTY+89,9,7,'#ffd166'); mug(278,BOTY+88,'#7cc6f2');
+  [252,288,324].forEach((x,i)=>{ stoolTop(x,BOTY+78); stoolTop(x,BOTY+118); 
+    addSpot(`dineT${i}`,{x,y:BOTY+79,dir:'down',seated:true,pair:`dineB${i}`,label:'🍜 กินข้าว',log:'นั่งกินข้าวที่แพนทรี',room:'pantry'});
+    addSpot(`dineB${i}`,{x,y:BOTY+119,dir:'up',seated:true,pair:`dineT${i}`,label:'🍜 กินข้าว',log:'นั่งกินข้าวที่แพนทรี',room:'pantry'}); });
+  plant(188,HH-6); plant(420,HH-6);
+  /* --- GAME ROOM --- */
+  // เป้าปาลูกดอก
+  c.fillStyle=OL; c.beginPath(); c.arc(454,BOTY+15,9,0,7); c.fill(); [['#f4f1ea',8],['#c0392b',6],['#f4f1ea',4],['#2f8a52',2]].forEach(([cl,rr])=>{ c.fillStyle=cl; c.beginPath(); c.arc(454,BOTY+15,rr,0,7); c.fill(); });
+  addSpot('dart',{x:456,y:BOTY+44,dir:'up',label:'🎯 ปาเป้า',log:'ไปปาเป้า',room:'server'});
+  // ตู้เกม 2 ตู้
+  [[590,'#6b3fa0'],[613,'#2f6fb0']].forEach(([x,col],i)=>{ r_(x,BOTY+6,21,42,OL); r_(x+1,BOTY+7,19,40,col); r_(x+1,BOTY+7,19,4,shade(col,.3)); r_(x+3,BOTY+13,15,11,'#15171d'); r_(x+2,BOTY+27,17,6,shade(col,-.3)); r_(x+5,BOTY+28,2,2,'#e74c3c'); r_(x+12,BOTY+29,2,2,'#f1c40f'); r_(x+15,BOTY+29,2,2,'#2ecc71'); blockRect(x,BOTY+6,21,44);
+    addSpot('arcade'+i,{x:x+10,y:BOTY+58,dir:'up',label:'🕹️ เล่นเกมตู้',log:'ไปเล่นเกมตู้',room:'server'}); });
+  // โต๊ะปิงปอง
+  r_(474,BOTY+56,92,30,OL); r_(475,BOTY+57,90,24,'#2f8a52'); r_(475,BOTY+57,90,1,'#fff'); r_(475,BOTY+80,90,1,'#fff'); r_(475,BOTY+57,1,24,'#fff'); r_(564,BOTY+57,1,24,'#fff'); r_(475,BOTY+68,90,1,'rgba(255,255,255,.6)'); r_(475,BOTY+81,90,4,'#246b40');
+  r_(519,BOTY+53,3,31,OL); r_(520,BOTY+54,1,29,'#e9e9ef'); r_(478,BOTY+86,3,6,OL); r_(559,BOTY+86,3,6,OL); blockRect(474,BOTY+53,92,40);
+  addSpot('ppL',{x:464,y:BOTY+74,dir:'right',pair:'ppR',label:'🏓 ตีปิงปอง',log:'ไปตีปิงปอง',room:'server'});
+  addSpot('ppR',{x:576,y:BOTY+74,dir:'left',pair:'ppL',label:'🏓 ตีปิงปอง',log:'ไปตีปิงปอง',room:'server'});
+  // บีนแบ็ก
+  [[470,BOTY+112,'#e07a9a'],[600,BOTY+112,'#f2b134']].forEach(([x,y,col],i)=>{ c.fillStyle=OL; c.beginPath(); c.ellipse(x+.5,y+.5,9,6,0,0,7); c.fill(); c.fillStyle=col; c.beginPath(); c.ellipse(x+.5,y,8,5,0,0,7); c.fill(); r_(x-4,y-3,5,2,shade(col,.35)); addSpot('gbean'+i,{x,y:y+3,dir:'down',sofa:true,label:'🎮 นั่งเล่นมือถือ',log:'นั่งพักในห้องเกม',room:'server'}); });
+  plant(628,HH-6);
+  r_(0,HH-2,HW,2,CAP);
+  // ทางเข้า-ออก (ซ้ายสุดของทางเดินบน)
+  r_(0,TOPH+2,6,CORH-4,OL); r_(1,TOPH+3,4,CORH-6,'#9fd8ff'); r_(2,TOPH+4,1,CORH-8,'#d7f0ff'); r_(8,TOPH+4,14,CORH-8,'#7a5230'); r_(9,TOPH+5,12,CORH-10,'#a8743f');
+  const EXIT={key:'exit',x:14,y:TOPH+CORH/2+2,dir:'left',exit:true,label:'🏠 กลับบ้าน',log:'กลับบ้านแล้ว'};
+  // ป้ายห้องบนผนังทางเดินไม่มี → ใช้ overlay
+
+  /* ---------- A* ---------- */
+  // ขยายสิ่งกีดขวางแข็ง (ผนัง/เฟอร์นิเจอร์) 1 ช่อง ให้ตัวละครไม่เบียดชิด
+  const blockDil=new Uint8Array(GW*GH);
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const v=block[y*GW+x]; if(!v) continue; blockDil[y*GW+x]=1; if(v!==1) continue;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const nx=x+dx, ny=y+dy; if(nx>=0&&ny>=0&&nx<GW&&ny<GH) blockDil[ny*GW+nx]=1; } }
+  const pathCache=new Map();
+  function astarOn(grid,sx,sy,tx,ty){
+    const s=[Math.max(0,Math.min(GW-1,Math.floor(sx/CS))),Math.max(0,Math.min(GH-1,Math.floor(sy/CS)))], t=[Math.max(0,Math.min(GW-1,Math.floor(tx/CS))),Math.max(0,Math.min(GH-1,Math.floor(ty/CS)))];
+    const N=GW*GH, key=(x,y,d)=>((y*GW+x)<<2)|d;
+    const g=new Float32Array(N*4).fill(1e9), from=new Int32Array(N*4).fill(-1), closed=new Uint8Array(N*4);
+    const hk=[], hf=[];
+    const push=(f,k)=>{ hk.push(k); hf.push(f); let i=hk.length-1; while(i>0){ const p=(i-1)>>1; if(hf[p]<=hf[i]) break; [hf[p],hf[i]]=[hf[i],hf[p]]; [hk[p],hk[i]]=[hk[i],hk[p]]; i=p; } };
+    const pop=()=>{ const top=hk[0]; const lk=hk.pop(), lf=hf.pop(); if(hk.length){ hk[0]=lk; hf[0]=lf; let i=0; for(;;){ const l=2*i+1,r=l+1; let m=i; if(l<hk.length&&hf[l]<hf[m]) m=l; if(r<hk.length&&hf[r]<hf[m]) m=r; if(m===i) break; [hf[m],hf[i]]=[hf[i],hf[m]]; [hk[m],hk[i]]=[hk[i],hk[m]]; i=m; } } return top; };
+    const DX=[1,-1,0,0], DY=[0,0,1,-1];
+    for(let d=0;d<4;d++){ const k=key(s[0],s[1],d); g[k]=0; push(Math.abs(s[0]-t[0])+Math.abs(s[1]-t[1]),k); }
+    let end=-1, iter=0;
+    while(hk.length && iter++<400000){
+      const k=pop(); if(closed[k]) continue; closed[k]=1;
+      const cell=k>>2, d=k&3, x=cell%GW, y=(cell/GW)|0;
+      if(x===t[0]&&y===t[1]){ end=k; break; }
+      for(let nd=0;nd<4;nd++){
+        const nx=x+DX[nd], ny=y+DY[nd]; if(nx<0||ny<0||nx>=GW||ny>=GH) continue;
+        const isT=nx===t[0]&&ny===t[1];
+        // ออกจากจุดที่ยืน/นั่งอยู่ได้เสมอ (ช่องแรก) แต่ห้ามเดินผ่านสิ่งกีดขวาง
+        if(grid[ny*GW+nx] && !isT && !(Math.abs(nx-s[0])+Math.abs(ny-s[1])<=1 && block[ny*GW+nx]!==1)) continue;
+        const nk=key(nx,ny,nd), ng=g[k]+1+(nd!==d?0.7:0);
+        if(ng<g[nk]){ g[nk]=ng; from[nk]=k; push(ng+Math.abs(nx-t[0])+Math.abs(ny-t[1]),nk); }
+      }
+    }
+    if(end<0) return null;
+    const pts=[]; let k=end, lastD=-1;
+    while(k>=0){ const cell=k>>2, d=k&3; if(d!==lastD) pts.push({x:(cell%GW)*CS+2,y:((cell/GW)|0)*CS+2}); lastD=d; k=from[k]; }
+    pts.reverse(); pts.push({x:tx,y:ty}); return pts;
+  }
+  function astar(sx,sy,tx,ty){ return astarOn(blockDil,sx,sy,tx,ty) || astarOn(block,sx,sy,tx,ty); }
+
+  /* ---------- น้องทุกทีม ---------- */
+  const HAIRS=[null,'#6b3a1f','#1d1d2b','#a0522d','#3a2a1c'];
+  const BASE=Object.fromEntries(AGENTS.map(a=>[a.id,a]));
+  const HA=[]; // hq agents
+  ROOMS.forEach((p,pi)=>{
+    ['pm','ui','dev','tester'].forEach((role,ri)=>{
+      const b=BASE[role];
+      const a={ ...b, key:`${p.id}:${role}`, role, proj:p, name:`${ROLE_LABEL[role]}_${p.short}`,
+        hair:HAIRS[pi%HAIRS.length]||b.hair, pants:shade(p.color,-.35),
+        home:SP[`seat_${p.id}_${role}`], x:0,y:0, dir:'up', state:'seated', path:[], target:null, eff:{state:'idle'}, active:false, sig:'',
+        bubble:'', bubbleUntil:0, bubbleAt:rand(2,8), idleT:rand(0,6), idleLimit:rand(6,14), walkT:0, until:0, sofa:false, logs:[], lastTask:'' };
+      a.x=a.home.x; a.y=a.home.y; a.avatar=avatarURL(a);
+      HA.push(a);
+    });
+  });
+  // 👩‍💼 พี่ป่าน หัวหน้าใหญ่ (ถาวร)
+  const BOSS={ id:'boss', key:'boss', role:'boss', boss:true, proj:null, name:'พี่ป่าน', skin:'#f3d0b0', hair:'#7a4a2a', style:'long', shirt:'#24242c', pants:'#24242c', suit:true, skirt:true,
+    home:SP.seat_boss, x:0, y:0, dir:'up', state:'seated', path:[], target:null, eff:{state:'idle'}, active:false, sig:'', bubble:'', bubbleUntil:0, bubbleAt:rand(3,8), idleT:0, idleLimit:99, walkT:0, until:rand(6,12), sofa:false, logs:[], lastTask:'' };
+  BOSS.x=BOSS.home.x; BOSS.y=BOSS.home.y; BOSS.avatar=avatarURL(BOSS); HA.push(BOSS);
+  const hTaken=new Map(); HA.forEach(a=>hTaken.set(a.home.key,a));
+  const hsay=(a,t,d=3.5)=>{ a.bubble=t; a.bubbleUntil=realT+d; };
+  const hlog=(a,t)=>{ a.logs.unshift({ms:Date.now(),text:t}); if(a.logs.length>20) a.logs.pop(); hFeed.unshift({ms:Date.now(),text:`${a.name}: ${t}`}); if(hFeed.length>40) hFeed.pop(); };
+  const hFeed=[];
+  function hRelease(a){ for(const [k,v] of hTaken) if(v===a) hTaken.delete(k); }
+  function hWalk(a,spot){
+    const path=astar(a.x,a.y,spot.x,spot.y);
+    if(!path){ if(spot!==a.home){ return false; } a.x=spot.x; a.y=spot.y; hRelease(a); hTaken.set(spot.key,a); a.target=spot; a.path=[]; hArrive(a); return true; }
+    hRelease(a); hTaken.set(spot.key,a); a.sofa=false; a.target=spot; a.path=path; a.state='walking'; a.speed=rand(28,36); return true; }
+  const hHome=a=>hWalk(a,a.home);
+  const toHome=a=>a.state==='seated'||(a.state==='walking'&&a.target===a.home);
+
+  /* ---------- บทสนทนา (ข้ามทีมได้) ---------- */
+  const hConvos=[];
+  function errandLines(a,b){
+    const r=Math.random(), freeB=!b.active;
+    if(r<.45){ const item=pick(['ลาเต้','อเมริกาโน่เย็น','ชาเขียว','โกโก้','คาปูชิโน่']);
+      return {lines:[`☕ เอากาแฟมั้ย ${b.name}`, `เอา${item} 1 แก้ว`, 'ได้เลย เดี๋ยวไปชงให้!', 'ขอบคุณน้า 🙏'], act:'coffee', item}; }
+    if(r<.7){ const item=pick(['คุกกี้','ขนมปัง','ช็อกโกแลต','มันฝรั่งทอด']);
+      return {lines:['🍪 หิวมั้ย', `อยากได้${item}อะ`, 'เดี๋ยวไปหยิบให้', '😋 ขอบใจ'], act:'snack', item}; }
+    if(freeB) return {lines:['🍜 ไปกินข้าวกันมั้ย','ไป! หิวพอดี','ไปโต๊ะกินข้าวกัน','โอเค~ ไปกัน'], act:'lunch'};
+    return {lines:['🍜 ไปกินข้าวกันมั้ย','ขอเคลียร์งานก่อนนะ 😅','โอเค สู้ๆ','ไว้รอบหน้า 🙏']};
+  }
+  function teamStats(p){ const st=p&&PS[p.id], r={total:0,done:0,doing:0,review:0,todo:0}; if(!st) return r;
+    st.tasks.forEach(t=>{ r.total++; if(t.status==='DONE') r.done++; else if(t.status==='IN PROGRESS') r.doing++; else if(t.status==='IN REVIEW') r.review++; else if(t.status==='TODO') r.todo++; }); return r; }
+  function memberAnswer(m){ const e=m.eff, prog=typeof e.progress==='number'?` (${e.progress}%)`:'';
+    if(e.state==='blocked') return `⛔ ติด ${cut(e.doing||'รอผู้ใช้ตัดสินใจ',22)} ค่ะ`;
+    if(e.state==='waiting') return '📥 มีงานรอตรวจอยู่ค่ะ';
+    if(m.active) return `${e.task?e.task+': ':''}${cut(e.doing||'กำลังทำงาน',22)}${prog}`;
+    return pick(['ว่างอยู่ค่ะ รองานใหม่','สบายดีค่ะ ยังไม่มีงาน','พร้อมรับงานค่ะ 🙋']); }
+  function bossLines(a,b){
+    if(a.boss){ const e=b.eff, st=b.proj&&PS[b.proj.id], ts=teamStats(b.proj), task=e.task||'งาน';
+      const prog=typeof e.progress==='number'?e.progress:null;
+      if(e.state==='blocked') return [`${b.name} ติดอะไรอยู่จ๊ะ`, `ติด${task!=='งาน'?' '+task:''} ค่ะ · ${cut(e.doing||'รอผู้ใช้ตัดสินใจอยู่',26)}`, 'ต้องรอใครตัดสินใจ?', 'รอผู้ใช้ยืนยันก่อนค่ะ 😥', 'โอเค เดี๋ยวพี่ช่วยตามให้นะ', 'ขอบคุณค่ะพี่ป่าน 🙏'];
+      if(e.state==='waiting') return ['มีงานรอตรวจอยู่ใช่มั้ย', `ใช่ค่ะ ${cut(e.doing||task,28)}`, `ตอนนี้ทีมรอตรวจ ${Math.max(1,ts.review)} งาน ตรวจได้เมื่อไหร่?`, 'เดี๋ยวรีบตรวจให้วันนี้ค่ะ', 'ดี ทีมจะได้ไปต่อ 👍', 'รับทราบค่ะ ✅'];
+      if(e.state==='reviewing'&&st&&st.review&&st.review.round) return ['ตรวจงานอะไรอยู่จ๊ะ', `ตรวจ ${cut(st.review.round,24)} ค่ะ`, 'ผลเป็นไงบ้าง?', cut(st.review.verdict||'กำลังดูอยู่ค่ะ',30), /APPROV|ผ่าน/i.test(st.review.verdict||'')?'เยี่ยม ผ่านแล้ว 👏':'โอเค ให้น้องแก้ให้ไวนะ', 'ค่ะพี่ 😊'];
+      if(b.active){
+        const step=prog==null?'กำลังลุยอยู่ค่ะ ยังไม่ได้ประเมิน %':prog<30?`เพิ่งเริ่มค่ะ ได้ราว ${prog}%`:prog<70?`ได้ประมาณ ${prog}% แล้วค่ะ`:`ใกล้เสร็จแล้วค่ะ ${prog}%`;
+        const react=prog==null?'ค่อยๆ ทำ ขอให้ละเอียดนะ':prog<30?'ไม่ต้องรีบ ค่อยๆ ทำให้ถูก':prog<70?'มาครึ่งทางแล้ว เยี่ยมมาก':'สุดยอด เกือบแล้ว 👏';
+        const extra=b.role==='tester'&&st&&st.test&&st.test.result?`รอบล่าสุดผล ${cut(st.test.result,16)} ค่ะ`:b.role==='dev'&&st&&st.commits&&st.commits[0]?`ล่าสุด commit "${cut(st.commits[0].subject,20)}"`:pick(['ไม่มีปัญหาค่ะ','ราบรื่นดีค่ะ','มีจุดเล็กๆ แต่จัดการได้ค่ะ']);
+        return [`${task} เป็นไงบ้าง ราบรื่นมั้ย?`, `กำลัง${cut(e.doing||'ทำงาน',26)}ค่ะ`, 'ทำไปถึงไหนแล้ว?', `${step} · ${extra}`, react, pick(['ขอบคุณค่ะพี่ 😊','ติดอะไรจะรีบบอกค่ะ','สู้ค่ะ! 💪'])];
+      }
+      const mine=st?st.tasks.filter(t=>t.status==='TODO'&&(t.owner===b.role||(!t.owner&&b.role==='dev'))).length:0;
+      if(b.role==='pm') return ['ทีมเราเป็นไงบ้าง', `เสร็จแล้ว ${ts.done}/${ts.total} งาน กำลังทำ ${ts.doing} รอตรวจ ${ts.review}`, ts.todo?`ยังเหลือรอทำ ${ts.todo} งานนะ`:'งานหมดคิวแล้วเหรอ', ts.todo?'เดี๋ยวจัดคิวส่งแชทกลางค่ะ':'ใช่ค่ะ รอผู้ใช้สั่งงานใหม่', ts.total&&ts.done/ts.total>=.5?'ดีมาก ไปได้สวย 👏':'โอเค ลุยกันต่อนะ', 'ค่ะพี่ 😊'];
+      return [`ว่างอยู่เหรอ ${b.name}`, mine?`มีงานรอคิวอยู่ ${mine} งานค่ะ รอแชทกลางสั่ง`:'ยังไม่มีงานใหม่ค่ะ เลยพักก่อน', mine?'งั้นเตรียมตัวไว้นะ':'พักได้ แต่อย่าหายไปนานนะ 555', '555 ได้ค่ะพี่'];
+    }
+    if(Math.random()<.3) return errandLines(a,b);
+    return pick([['พี่ป่านคะ ขอปรึกษาหน่อย','ว่าไงจ๊ะ','งานนี้ควรทำแบบไหนดีคะ','ลองคุยกับ PM ก่อนนะ 👍'],['พี่ป่านกินข้าวยังคะ','ยังเลย ประชุมทั้งเช้า','สู้ๆ นะคะพี่','ขอบใจจ้า 🥰'],['พี่ป่านคะ วันนี้งานเยอะมั้ย','พอไหว 😮‍💨','พักบ้างนะคะ','จ้า ขอบใจ']]);
+  }
+  function linesFor(a,b){
+    if(a.boss||b.boss) return bossLines(a,b);
+    if(Math.random()<.35 && !a.errand) return errandLines(a,b);
+    const ta=a.active&&a.eff.task, tb=b.active&&b.eff.task;
+    if(a.proj!==b.proj){
+      const pool=[
+        [`ทีม ${b.proj.short} เป็นไงบ้าง`, tb?`ลุย ${tb} อยู่เลย`:'ช่วงนี้สบายๆ 😎', `ทีม ${a.proj.short} ก็ยุ่งเหมือนกัน`, 'สู้ๆ ทั้งสองทีม 💪'],
+        ['ขอดูวิธีที่ทีมนายทำหน่อยดิ', 'ได้ๆ เดี๋ยวส่ง doc ให้', `ขอบใจ ทีม ${b.proj.short} ใจดี`, '555 ได้เสมอ'],
+        [`ทีม ${a.proj.short} มีบั๊กแปลกๆ อะ`, 'เคยเจอเหมือนกัน', 'แก้ยังไงอะ', 'เปิด log ก่อนเลย 👀'],
+        ['ไปกินข้าวด้วยกันมั้ย 🍜', 'ไป! เรียกทีมด้วย', `ทีม ${b.proj.short} ไปกี่คน`, 'ไปหมดเลย 555'],
+      ];
+      if(tb) pool.push([`${tb} ของทีม ${b.proj.short} ถึงไหนแล้ว`, cut(b.eff.doing||'กำลังลุยอยู่'), 'ติดอะไรเรียกได้นะ', 'ขอบใจ 🙏']);
+      return pick(pool);
+    }
+    if(tb && Math.random()<.6) return [`${tb} ไปถึงไหนแล้ว`, cut(b.eff.doing||'กำลังลุยอยู่'), 'ติดอะไรบอกได้นะ', 'ได้เลย ขอบใจ 🙏'];
+    if(ta && Math.random()<.4) return [`เดี๋ยวช่วยเช็ก ${ta} ให้หน่อย`, 'ได้ ส่งมาเลย', 'ขอบใจมาก', 'จัดไป 👍'];
+    return pick(CHATS);
+  }
+  function hStartConvo(a,b,atDesk){
+    if(hConvos.some(c=>[c.a,c.b].includes(a)||[c.a,c.b].includes(b))) return;
+    const L=linesFor(a,b); const cv={a,b,lines:Array.isArray(L)?L:L.lines,act:L.act,item:L.item,idx:-1,nextAt:realT+.4,atDesk}; hConvos.push(cv);
+    if(atDesk) b.faceRight=true;
+    a.until=Infinity; if(!atDesk) b.until=Infinity;
+    if(a.proj!==b.proj) hlog(a,`คุยข้ามทีมกับ ${b.name}`);
+  }
+  function hEndConvo(cv,done){ hConvos.splice(hConvos.indexOf(cv),1); if(done&&cv.act) setTimeout(()=>startErrand(cv.a,cv.b,cv.act,cv.item),400); cv.b.faceRight=false; if(cv.a.state==='activity') cv.a.until=realT+rand(.5,1.5); if(!cv.atDesk&&cv.b.state==='activity') cv.b.until=realT+rand(1,2.5); }
+  function hConvoTick(){
+    for(const cv of [...hConvos]){
+      const okA=cv.a.state==='activity', okB=cv.atDesk?cv.b.state==='seated':cv.b.state==='activity';
+      if(!okA||!okB){ hEndConvo(cv); continue; }
+      if(realT>cv.nextAt){ cv.idx++; if(cv.idx>=cv.lines.length){ hEndConvo(cv,true); continue; }
+        const sp=cv.idx%2===0?cv.a:cv.b; hsay(sp,'💬 '+cv.lines[cv.idx],2.1); sp.talkUntil=realT+2; cv.nextAt=realT+2.3; }
+    }
+  }
+
+  /* ---------- ไปทำธุระให้เพื่อน (ชงกาแฟ / หยิบขนม / ชวนกินข้าว) ---------- */
+  function startErrand(a,b,kind,item){
+    if(a.state==='away'||a.active&&ACTIVE.has(a.eff.state)) return;
+    if(kind==='lunch'){
+      for(let i=0;i<3;i++){ const t=`dineT${i}`, bt=`dineB${i}`; if(hTaken.has(t)||hTaken.has(bt)) continue;
+        if(hWalk(a,{...SP[t],label:'🍜 ไปกินข้าว'})){ a.errand=null; hsay(a,'🍜 ไปกันๆ',2.5); }
+        if(b.state!=='away'&&!b.active&&hWalk(b,{...SP[bt],label:'🍜 ไปกินข้าว'})) hsay(b,'🍜 หิวแล้ว~',2.5);
+        hlog(a,`ชวน ${b.name} ไปกินข้าว`); return; }
+      return;
+    }
+    const spots=kind==='coffee'?['coffee1','coffee2']:['coffee2','fridge','vend'];
+    const k=spots.find(x=>!hTaken.has(x)); if(!k) return;
+    const verb=kind==='coffee'?'ชง':'หยิบ';
+    if(hWalk(a,{...SP[k],errand:'fetch',label:`${kind==='coffee'?'☕':'🍪'} ไป${verb}${item}ให้ ${b.name}`})){
+      a.errand={kind,for:b,item,stage:'fetch'}; hsay(a,a.target.label,3); hlog(a,`ไป${verb}${item}ให้ ${b.name}`);
+    }
+  }
+  function deliverSpot(a,b){
+    if(b.state==='away') return null;
+    if(b.state==='seated') return {key:'deliver-'+a.key,x:b.home.x+13,y:b.home.y+3,dir:'left',errand:'deliver'};
+    const tx=b.state==='walking'&&b.target?b.target.x:b.x, ty=b.state==='walking'&&b.target?b.target.y:b.y;
+    const side=tx<HW-30?14:-14;
+    return {key:'deliver-'+a.key,x:tx+side,y:ty+2,dir:side>0?'left':'right',errand:'deliver'};
+  }
+  function errandNext(a){
+    const e=a.errand; if(!e) return false;
+    if(e.stage==='fetch'){
+      a.carry=e.kind; e.stage='deliver';
+      const sp=deliverSpot(a,e.for);
+      if(sp && hWalk(a,{...sp,label:`${e.kind==='coffee'?'☕':'🍪'} เอา${e.item}ไปส่ง`})){ hsay(a,`${e.kind==='coffee'?'☕':'🍪'} ${e.item}ได้แล้ว ไปส่งก่อน`,2.5); return true; }
+      hsay(a,'อ้าว หาไม่เจอ งั้นกินเองละกัน 😋',3); a.carry=null; a.errand=null; return false;
+    }
+    return false;
+  }
+
+  /* ---------- พี่ป่าน: เดินตรวจทุกทีม ---------- */
+  const BOSS_DESK=['📋 เช็กรายงานทีม','📊 ดูภาพรวมงาน','☎️ คุยลูกค้าอยู่','✍️ เซ็นเอกสาร','📧 ตอบอีเมล'];
+  function bossPlan(){
+    const present=HA.filter(o=>!o.boss&&o.state!=='away'), plan=[];
+    present.filter(o=>o.eff.state==='blocked').forEach(o=>plan.push({t:'visit',o}));
+    present.filter(o=>o.eff.state==='waiting').forEach(o=>plan.push({t:'visit',o}));
+    [...ROOMS].sort(()=>Math.random()-.5).forEach(p=>{ plan.push({t:'pod',p}); const team=present.filter(o=>o.proj===p&&o.state==='seated'), act=team.filter(o=>o.active); if(team.length) plan.push({t:'visit',o:pick(act.length?act:team)}); });
+    if(Math.random()<.7) plan.push({t:'cmd'});
+    if(Math.random()<.35) plan.push({t:'coffee'});
+    plan.push({t:'desk'});
+    return plan;
+  }
+  function bossNext(a){
+    a.sched=[];
+    for(let guard=0;guard<10;guard++){
+      if(!a.plan||!a.plan.length) a.plan=bossPlan();
+      const st=a.plan.shift(); let ok=false;
+      if(st.t==='desk'){ if(a.state==='seated'){ a.until=realT+rand(20,35); a.bossDoing='📋 ทำงานในห้อง'; return; } ok=hWalk(a,a.home); a.bossDoing='🚶 กลับห้องทำงาน'; }
+      else if(st.t==='pod'){ const p=st.p; ok=hWalk(a,{key:'boss-pod',x:p.pod.x+102,y:p.pod.y+90,dir:'up',dur:4,podCheck:p,label:`👀 เดินดูทีม ${p.short}`,bossSay:`ทีม ${p.short} เป็นไงบ้างจ๊ะ ราบรื่นมั้ย?`}); a.bossDoing=`👀 เดินดูทีม ${p.short}`; }
+      else if(st.t==='visit'){ const o=st.o; if(o.state!=='seated'||hTaken.has('visit-'+o.key)) continue; ok=hWalk(a,{key:'visit-'+o.key,x:o.home.x+13,y:o.home.y+3,dir:'left',label:`💬 แวะถาม ${o.name}`,visit:o}); if(ok) o.expectVisitor=a; a.bossDoing=`💬 คุยกับ ${o.name}`; }
+      else if(st.t==='cmd'){ const k=CMD.find(x=>!hTaken.has(x.key)); if(!k) continue; const pr=pick(ROOMS), stt=PS[pr.id]; let say='ดูความคืบหน้าทุกทีมหน่อย 👀';
+        if(stt&&stt.tasks.length){ const done=stt.tasks.filter(x=>x.status==='DONE').length, tot=stt.tasks.length; say=`ทีม ${pr.short} เสร็จ ${done}/${tot} งานแล้ว ${done/tot>=.5?'เยี่ยมมาก 👏':'สู้ๆ นะ 💪'}`; }
+        ok=hWalk(a,{...k,dur:6,label:'📊 ดูความคืบหน้าที่บอร์ดงาน',bossSay:say}); a.bossDoing='📊 ดูความคืบหน้าที่บอร์ดงาน'; }
+      else if(st.t==='coffee'){ const k=['coffee1','coffee2'].find(x=>!hTaken.has(x)); if(!k) continue; ok=hWalk(a,{...SP[k],dur:6,label:'☕ พักกาแฟแป๊บ'}); a.bossDoing='☕ พักกาแฟ'; }
+      if(ok){ if(a.target&&a.target.label) hsay(a,a.target.label,2.5); return; }
+    }
+    a.until=realT+5;
+  }
+  function bossTick(a){
+    if(hConvos.some(c=>c.a===a||c.b===a)) return;
+    const v=a.expectVisitor; if(a.state==='seated'&&v&&v.state==='walking'&&v.target&&v.target.visit===a) return;
+    if(a.state==='seated'&&realT>a.bubbleAt){ a.bubbleAt=realT+rand(10,16); hsay(a,pick(BOSS_DESK),3); }
+    if(realT>(a.until||0)) bossNext(a);
+  }
+  function bossPresence(a){
+    if(!a.timesSet){ a.timesSet=1; a.arriveMin=495; a.leaveMin=1125; }
+    const here=shouldBeHere(a);
+    if(!a.loaded){ a.loaded=true; if(!here){ a.state='away'; hRelease(a); a.x=EXIT.x; a.y=EXIT.y; } return; }
+    if(!here&&a.state!=='away'&&!(a.target&&a.target.exit)) goExit(a);
+    else if(here&&(a.state==='away'||(a.target&&a.target.exit&&a.state==='walking'))) comeIn(a);
+  }
+
+  /* ---------- กิจกรรมตอนว่าง ---------- */
+  function hBreak(a){
+    const free=k=>SP[k]&&!hTaken.has(k);
+    const opts=[]; const add=(k,w)=>{ if(free(k)&&(!SP[k].roles||SP[k].roles.includes(a.role))) for(let i=0;i<w;i++) opts.push(k); };
+    ['coffee1','coffee2','micro','fridge'].forEach(k=>add(k,2));
+    ['sofa0','sofa1','sofa2','arm'].forEach(k=>add(k,2));
+    for(let i=0;i<3;i++){ const pairT=SP[`dineT${i}`], pairB=SP[`dineB${i}`]; const wantPair=hTaken.has(`dineT${i}`)||hTaken.has(`dineB${i}`); add(`dineT${i}`,wantPair?4:1); add(`dineB${i}`,wantPair?4:1); }
+    for(let i=0;i<6;i++){ const wantPair=hTaken.has(`meetT${i}`)||hTaken.has(`meetB${i}`); add(`meetT${i}`,wantPair?4:1); add(`meetB${i}`,wantPair?4:1); }
+    CMD.forEach(s=>add(s.key,1)); add('dart',2); add('arcade0',2); add('arcade1',2); add('gbean0',1); add('gbean1',1);
+    { const pp=hTaken.has('ppL')||hTaken.has('ppR'); add('ppL',pp?5:1); add('ppR',pp?5:1); const pl=hTaken.has('plan0')||hTaken.has('plan1'); add('plan0',pl?4:1); add('plan1',pl?4:1); }
+    ['cooler','printer','bean0','bean1','bean2'].forEach(k=>add(k,1));
+    if(BOSS.state!=='away'){ const wp=hTaken.has('bossGuest0')||hTaken.has('bossGuest1'); add('bossGuest0',wp?3:1); add('bossGuest1',wp?3:1); }
+    const seated=HA.filter(o=>o!==a&&o.state==='seated'&&!hTaken.has('visit-'+o.key));
+    if(seated.length) for(let i=0;i<6;i++) opts.push('visit');
+    if(!opts.length) return;
+    const hr=new Date().getHours();
+    if(hr===12){ const food=opts.filter(k=>/^(dine|coffee|micro|fridge|vend|cooler2)/.test(k)); for(let i=0;i<3;i++) opts.push(...food); }
+    const k=pick(opts);
+    if(k==='visit'){
+      const other=seated.filter(o=>o.proj!==a.proj), o=(other.length&&Math.random()<.6)?pick(other):pick(seated);
+      const sp={key:'visit-'+o.key,x:o.home.x+13,y:o.home.y+3,dir:'left',label:`💬 แวะคุยกับ ${o.name}`,log:`แวะไปคุยกับ ${o.name}${o.boss?'':o.proj!==a.proj?' (ข้ามทีม)':''}`,visit:o};
+      if(!hWalk(a,sp)) return; o.expectVisitor=a;
+    } else if(!hWalk(a,SP[k])) return;
+    hlog(a,a.target.log); hsay(a,a.target.label,2.5);
+  }
+  function hBoardFirst(a){
+    const pool=CMD.filter(s=>!hTaken.has(s.key)).length?CMD.filter(s=>!hTaken.has(s.key)):BRIEF.filter(s=>!hTaken.has(s.key));
+    if(!pool.length){ hHome(a); return; }
+    const s=pick(pool);
+    if(!hWalk(a,{...s,checkTask:true,label:`📌 ดูงาน${a.eff.task?' '+a.eff.task:'ใหม่'}ที่บอร์ด`})){ hHome(a); return; }
+    hsay(a,'👀 มีงานใหม่! ไปดูก่อน',3);
+  }
+  function hArrive(a){
+    const s=a.target; a.dir=s.dir; a.path=[];
+    if(s===a.home){ a.state='seated'; a.idleT=0; a.idleLimit=rand(8,16); a.bubbleAt=realT+1; if(a.boss){ a.until=realT+rand(20,35); a.bossDoing='📋 ทำงานในห้อง'; } return; }
+    if(s.exit){ a.state='away'; hRelease(a); return; }
+    a.state='activity'; a.sofa=!!s.sofa;
+    if(s.celebrate){ a.until=Math.max(realT+10,(a.celebrateUntil||0)-20); a.emoteAt=realT+1; return; }
+    if(s.checkTask){ a.until=realT+rand(3.5,5); hsay(a,s.label,4); return; }
+    if(s.dur){ a.until=realT+s.dur; hsay(a,s.bossSay||s.label,3.5);
+      if(s.podCheck){ const team=HA.filter(o=>o.proj===s.podCheck&&o.state!=='away'&&!hConvos.some(c=>c.a===o||c.b===o)).sort((p,q)=>(q.active-p.active)||Math.random()-.5).slice(0,3);
+        a.sched=[]; let tt=realT+2;
+        team.forEach(m=>{ a.sched.push({at:tt,who:m,text:'💬 '+memberAnswer(m)}); tt+=2.2; });
+        const anyBlock=team.some(m=>m.eff.state==='blocked'), anyAct=team.some(m=>m.active);
+        a.sched.push({at:tt,who:a,text:'💬 '+(!team.length?'อ้าว ไม่อยู่กันเลย 😅':anyBlock?'ใครติดอะไรบอกพี่นะ เดี๋ยวช่วยตามให้':anyAct?pick(['ดีมาก ลุยต่อเลย 💪','เยี่ยม งานเดินดีนะ 👍','อย่าลืมพักสายตาด้วยนะทุกคน']):'ว่างกันหมดเลย 555 พักได้นะ')});
+        a.until=tt+2; }
+      return; }
+    if(s.errand==='fetch'&&a.errand){ a.until=realT+rand(4,6); a.brewing=true; hsay(a,`${a.errand.kind==='coffee'?'☕ กำลังชง':'🍪 กำลังหยิบ'}${a.errand.item}...`,4.5); return; }
+    if(s.errand==='deliver'&&a.errand){ const b=a.errand.for, near=b.state!=='away'&&Math.hypot(b.x-a.x,b.y-a.y)<40;
+      if(near){ hsay(a,`${a.errand.kind==='coffee'?'☕':'🍪'} ${a.errand.item}มาแล้วจ้า`,2.5); b.thankAt=realT+1.4; b.gift=a.errand.kind; b.giftUntil=realT+120; if(b.state==='seated') b.faceRight=true, b.faceUntil=realT+3.5; hlog(a,`เอา${a.errand.item}ไปให้ ${b.name}`); }
+      else hsay(a,'อ้าว ไปไหนแล้ว งั้นกินเองนะ 😋',3);
+      a.carry=null; a.errand=null; a.until=realT+3; return; }
+    a.until=realT+rand(8,16);
+    if(s.visit){ const o=s.visit; o.expectVisitor=null; if(o.state==='seated'){ hStartConvo(a,o,true); return; } a.until=realT+2; hsay(a,'อ้าว ไม่อยู่ซะงั้น 😅',2.5); return; }
+    if(s.pair){ const o=hTaken.get(s.pair); if(o&&o!==a&&o.state==='activity'&&o.target&&o.target.key===s.pair){ hStartConvo(o,a,false); return; } }
+    hsay(a,s.label,3.5);
+  }
+
+  /* ---------- ข้อมูลจริง ---------- */
+  const PS={}; // project id -> state
+  /* ---------- เข้างาน / กลับบ้าน ---------- */
+  HA.forEach(a=>{ a.arriveMin=480+Math.floor(rand(0,60)); a.leaveMin=1080+Math.floor(rand(0,50)); });
+  function shouldBeHere(a){ if(a.active) return true; const d=new Date(), wd=d.getDay(); if(wd===0||wd===6) return false; const m=d.getHours()*60+d.getMinutes(); return m>=a.arriveMin&&m<a.leaveMin; }
+  function goExit(a){ hConvos.filter(c=>c.a===a||c.b===a).forEach(hEndConvo); if(hWalk(a,{...EXIT,key:'exit-'+a.key})){ hsay(a,pick(['👋 กลับบ้านก่อนนะ','🏠 เลิกงานแล้ว~','🌙 พรุ่งนี้เจอกัน']),3); hlog(a,'เลิกงาน กลับบ้าน'); } }
+  function comeIn(a){ if(a.state==='away'){ a.x=EXIT.x; a.y=EXIT.y; } a.state='activity'; a.until=0; hHome(a); hsay(a,a.active?'📞 มาด่วน! มีงานเข้า':pick(['☀️ อรุณสวัสดิ์~','☕ มาแล้วจ้า','👋 หวัดดีทุกคน']),3); hlog(a,a.active?'ถูกเรียกเข้ามาทำงาน':'เข้างาน'); }
+  /* ---------- แจ้งเตือน ---------- */
+  const toastBox=document.getElementById('hqToasts');
+  function toast(html,cls){ const d=document.createElement('div'); d.className='toast '+(cls||''); d.innerHTML=html; toastBox.appendChild(d); while(toastBox.children.length>3) toastBox.firstChild.remove(); setTimeout(()=>d.remove(),5200); }
+  function alertAgent(a,text){ a.alertUntil=realT+6; a.flash=true; setTimeout(()=>{ a.flash=false; },5000); if(text) toast(text,'new'); }
+  /* ---------- ฉลองเมื่องานผ่าน ---------- */
+  let confettiUntil=0, confetti=[];
+  function celebrate(p,t){
+    toast(`✅ <b>${esc(t.id)}</b> ของทีม ${esc(p.short)} เสร็จแล้ว! ไปฉลองที่ห้องประชุม 🎉`,'done');
+    const seats=Object.keys(SP).filter(k=>/^meet[TB]\d$/.test(k)&&!hTaken.has(k));
+    HA.filter(a=>a.proj===p&&a.state!=='away').forEach(a=>{ const k=seats.shift(); if(!k) return; hConvos.filter(c=>c.a===a||c.b===a).forEach(hEndConvo);
+      if(hWalk(a,{...SP[k],celebrate:true,label:'🎉 ไปฉลอง!'})){ a.celebrateUntil=realT+40; hsay(a,'🎉 '+t.id+' ผ่านแล้ว!',3); hlog(a,`ไปฉลอง ${t.id} ที่ห้องประชุม`); } });
+    if(BOSS.state!=='away'){ const k=seats.shift(); if(k&&!hConvos.some(c=>c.a===BOSS||c.b===BOSS)&&hWalk(BOSS,{...SP[k],celebrate:true,label:'🎉 ไปแสดงความยินดี'})){ BOSS.celebrateUntil=realT+40; BOSS.plan=[]; hsay(BOSS,`👏 เก่งมากทีม ${p.short}!`,3); } }
+    confettiUntil=realT+16; confetti=[];
+  }
+  const prevTask={};
+  function detectTaskChanges(){
+    for(const p of ROOMS){ const st=PS[p.id]; if(!st) continue; const prev=prevTask[p.id];
+      const cur={}; st.tasks.forEach(t=>cur[t.id]=t.status);
+      if(prev){ st.tasks.forEach(t=>{ const was=prev[t.id];
+        if(was===undefined) toast(`📋 งานใหม่ <b>${esc(t.id)}</b> · ${esc(t.title)} <span style="opacity:.7">(${esc(p.short)})</span>`,'new');
+        else if(was!=='DONE'&&t.status==='DONE') celebrate(p,t); }); }
+      prevTask[p.id]=cur; }
+  }
+  function applyHQ(){
+    detectTaskChanges();
+    for(const a of HA){
+      if(a.boss){ bossPresence(a); continue; }
+      const st=PS[a.proj.id]; if(!st) continue;
+      const keep=S; S=st; const e=effective({id:a.role}); S=keep;
+      a.eff=e;
+      const active=ACTIVE.has(e.state)||e.state==='waiting'||e.state==='blocked';
+      const sig=[e.state,e.task||'',e.doing||''].join('|');
+      if(sig!==a.sig){ if(a.sig){ if(active){ hlog(a,`${STATE_TH[e.state]||e.state}${e.task?' '+e.task:''}${e.doing?' · '+e.doing:''}`); hsay(a,hBubble(a),4.5); } else if(a.active) { hlog(a,'ว่างงานแล้ว 🙌'); hsay(a,'🙌 เสร็จแล้ว ไปพักก่อน',3); } } a.sig=sig; }
+      const newTask=active && a.loaded && (!a.active || (e.task||'')!==a.lastTask);
+      a.active=active; if(active) a.lastTask=e.task||'';
+      // เข้างาน / กลับบ้าน
+      const here=shouldBeHere(a);
+      if(!a.loaded){ if(!here){ a.state='away'; hRelease(a); a.x=EXIT.x; a.y=EXIT.y; } }
+      else if(!here && a.state!=='away' && !(a.target&&a.target.exit)) goExit(a);
+      else if(here && (a.state==='away'||(a.target&&a.target.exit&&a.state==='walking'))) comeIn(a);
+      if(a.state==='away'){ a.loaded=true; continue; }
+      const celebrating=a.target&&a.target.celebrate&&realT<(a.celebrateUntil||0);
+      const toBoard=a.target&&a.target.checkTask&&(a.state==='walking'||a.state==='activity');
+      if(newTask && ACTIVE.has(e.state)) { a.errand=null; a.carry=null; a.brewing=false; alertAgent(a,`❗ <b>${esc(a.name)}</b> ได้งานใหม่ ${esc(e.task||'')}${e.doing?' · '+esc(cut(e.doing,30)):''}`); if(!toBoard&&!celebrating) hBoardFirst(a); }
+      else if(newTask && e.state==='waiting') { alertAgent(a,`📥 <b>${esc(a.name)}</b> มีงานรอตรวจ ${esc(e.task||'')}`); if(!toHome(a)&&!celebrating) hHome(a); }
+      else if(active && !toHome(a) && !toBoard && !celebrating){ if(a.errand){ a.errand=null; a.carry=null; a.brewing=false; } hHome(a); }
+      a.loaded=true;
+    }
+  }
+  function hBubble(a){
+    const e=a.eff;
+    if(e.state==='blocked') return '⛔ '+(e.doing||'ติดอยู่ รอผู้ใช้ตัดสินใจ');
+    if(e.state==='waiting') return e.doing||'📥 มีงานรอตรวจ';
+    const icon={testing:'🧪',reviewing:'🔍',designing:'🎨',planning:'📝'}[e.state]||'⌨️';
+    return `${icon} ${e.task?e.task+' · ':''}${cut(e.doing||STATE_TH[e.state]||'กำลังทำงาน',34)}`;
+  }
+  function hStatus(a){
+    if(a.state==='away') return '🏠 กลับบ้านแล้ว';
+    if(a.boss) return a.state==='seated'?'📋 ทำงานในห้องผู้บริหาร':(a.bossDoing||'👀 เดินดูทีม');
+    if(a.active) return hBubble(a);
+    if(a.state==='walking') return a.target===a.home?'🚶 เดินกลับโต๊ะ':'🚶 '+(a.target?a.target.label:'เดินเล่น');
+    if(a.state==='activity') return a.target?a.target.label:'พักอยู่';
+    return '☁️ ว่างอยู่';
+  }
+
+  /* ---------- update ---------- */
+  function hUpdate(dt){
+    hConvoTick();
+    for(const a of HA){
+      if(a.state==='away') continue;
+      if(a.sched&&a.sched.length&&realT>=a.sched[0].at){ const it=a.sched.shift(); if(it.who.state!=='away'){ hsay(it.who,it.text,2.4); it.who.talkUntil=realT+2; if(it.who!==a) it.who.bubbleAt=Math.max(it.who.bubbleAt||0,realT+4); } }
+      if(a.boss&&a.state!=='walking'){ bossTick(a); continue; }
+      if(a.thankAt&&realT>a.thankAt){ a.thankAt=0; a.bubbleAt=Math.max(a.bubbleAt||0,realT+5); hsay(a,pick(['ขอบคุณน้า 🥰','โห ใจดีจัง','รักเลย 555 🙏','หอมมาก ขอบใจ']),2.5); a.talkUntil=realT+2; }
+      if(a.faceUntil&&realT>a.faceUntil){ a.faceUntil=0; if(!hConvos.some(c=>c.b===a)) a.faceRight=false; }
+      if(a.state==='activity'&&a.target&&a.target.celebrate&&realT>(a.emoteAt||0)){ a.emoteAt=realT+rand(2.2,3.5); hsay(a,pick(['🎉 เย้!','🥳 เก่งมากทีม!','🍻 เลี้ยงหมูกระทะ!','👏👏👏','🙌 สุดยอด','🍰 ฉลองหน่อย']),2); a.talkUntil=realT+1.8; }
+      if(a.state==='walking'){
+        let move=(a.speed||32)*dt;
+        while(move>0&&a.path.length){ const p=a.path[0], dx=p.x-a.x, dy=p.y-a.y, d=Math.hypot(dx,dy);
+          if(Math.abs(dx)>Math.abs(dy)) a.dir=dx>0?'right':'left'; else if(d>0) a.dir=dy>0?'down':'up';
+          if(d<=move){ a.x=p.x; a.y=p.y; a.path.shift(); move-=d; } else { a.x+=dx/d*move; a.y+=dy/d*move; move=0; } }
+        a.walkT+=dt*7; if(!a.path.length) hArrive(a);
+      } else if(a.state==='activity'){
+        if(a.sofa && !hConvos.some(c=>c.a===a||c.b===a) && realT>(a.emoteAt||0)){ a.emoteAt=realT+rand(4,7); if(Math.random()<.5) hsay(a,pick(['💤','☕ จิบกาแฟ','📱 เลื่อนฟีด','🎵 ฮัมเพลง']),2.2); }
+        if(realT>a.until&&a.errand&&a.errand.stage==='fetch'){ a.brewing=false; if(errandNext(a)) continue; }
+        if(realT>a.until){ const wasTask=a.target&&a.target.checkTask; if(wasTask){ hlog(a,`อ่านงาน${a.eff.task?' '+a.eff.task:''} แล้ว กลับไปลุย 💪`); hHome(a); } else if(a.active) hHome(a); else if(Math.random()<.4) hBreak(a); else hHome(a); }
+      } else if(a.state==='seated'){
+        if(a.active){ if(realT>a.bubbleAt && !hConvos.some(c=>c.b===a)){ a.bubbleAt=realT+rand(10,18); hsay(a,hBubble(a),4.5); } }
+        else {
+          const v=a.expectVisitor; if(v&&v.state==='walking'&&v.target&&v.target.visit===a){ a.idleT=0; continue; }
+          if(hConvos.some(c=>c.b===a)){ a.idleT=0; continue; }
+          a.idleT+=dt; if(a.idleT>a.idleLimit){ a.idleT=0; a.idleLimit=rand(10,20); if(Math.random()<.8) hBreak(a); else hsay(a,pick(['☁️ ว่างอยู่ รองาน','👀 เช็ก TASKS.md แป๊บ','🎧 ฟังเพลงรอ']),3); }
+        }
+      }
+    }
+  }
+
+  /* ---------- render ---------- */
+  function deskChair(x,y){ hctx.fillStyle='#2a1d14'; hctx.beginPath(); hctx.ellipse(x+.5,y+1.5,6,4,0,0,7); hctx.fill(); hctx.fillStyle='#d8b98a'; hctx.beginPath(); hctx.ellipse(x+.5,y+1,5,3,0,0,7); hctx.fill(); R(hctx,x-3,y-1,3,1,'#ecd3aa'); }
+  function deskChairBack(){}
+  function hRender(t){
+    ctx=hctx; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(bgc,0,0);
+    // projector slides
+    const slide=Math.floor(t/5)%Math.max(1,P);
+    if(P){ const p=ROOMS[slide], st=PS[p.id]; R(ctx,56,7,92,4,p.color); const tasks=st?st.tasks.filter(x=>x.status!=='DONE').slice(0,4):[]; tasks.forEach((x,i)=>{ R(ctx,58,13+i*3,6,2,STAGE_COLOR_OF(x.status)); R(ctx,66,13+i*3,40+Math.floor(hash(i+slide*9)*36),2,'#c9cfdc'); }); }
+    // desks monitors
+    desks.forEach(d=>{ const ag=HA.find(a=>a.proj===d.proj&&a.role===d.role); const on=ag&&ag.state==='seated'&&(ag.active||ag.boss);
+      d.mon.forEach(([x,y,w,h],mi)=>{ const s=monitor(x,y,w,h); const tt=t+(d.proj?d.proj.idx:9)*7+mi*3;
+        if(!on) screenOff(s,tt); else if(d.role==='dev') (mi?screenTerm:screenCode)(s,tt); else if(d.role==='tester') (mi?screenTerm:screenTest)(s,tt); else if(d.role==='ui') screenDesign(s,tt); else screenBoard(s,tt); }); });
+    // 📋 บอร์ดงานสด
+    ROOMS.forEach((p,i)=>{ const st=PS[p.id]; if(!st) return; const ry=BRD.y+12+i*BRD.rowH;
+      COLS.forEach((col,ci)=>{ const list=st.tasks.filter(tk=>col.key==='OTHER'?!['TODO','IN PROGRESS','IN REVIEW','DONE'].includes(tk.status):tk.status===col.key);
+        const cx=BRD.x+BRD.lbl+ci*BRD.colW, per=Math.max(1,Math.floor((BRD.colW-2)/9)), maxRows=Math.max(1,Math.floor((BRD.rowH-2)/8));
+        list.slice(0,per*maxRows).forEach((tk,k)=>{ const nx=cx+2+(k%per)*9, ny=ry+2+Math.floor(k/per)*8, done=col.key==='DONE';
+          R(ctx,nx,ny,8,7,'#2a1d14'); R(ctx,nx+1,ny+1,6,5,done?shade(p.color,.7):shade(p.color,.45)); R(ctx,nx+1,ny+1,6,1,done?'#bfe3c9':p.color);
+          const busy=HA.some(a=>a.proj===p&&a.active&&a.eff.task===tk.id); if(busy&&Math.floor(realT*3)%2) R(ctx,nx+6,ny,2,2,'#e74c3c'); });
+        if(list.length>per*maxRows) R(ctx,cx+BRD.colW-5,ry+BRD.rowH-6,3,3,'#2a1d14'); }); });
+    // 🏓 ลูกปิงปอง
+    { const L=hTaken.get('ppL'), Rr=hTaken.get('ppR'); if(L&&Rr&&L.state==='activity'&&Rr.state==='activity'&&L.target&&L.target.key==='ppL'&&Rr.target&&Rr.target.key==='ppR'){
+      const ph=(Math.sin(realT*3.2)+1)/2, bx=478+ph*84, by=BOTY+68-Math.abs(Math.sin(realT*6.4))*7; R(ctx,bx,BOTY+70,3,1,'rgba(0,0,0,.25)'); R(ctx,bx-1,by-1,4,4,'#2a1d14'); R(ctx,bx,by,2,2,'#fff'); } }
+    // ตู้เกมจอกระพริบ
+    [590,613].forEach((x,i)=>{ for(let k=0;k<4;k++) R(ctx,x+4+k*3,BOTY+15+Math.floor(hash(k+i*9+Math.floor(realT*4))*7),2,2,['#e74c3c','#f1c40f','#2ecc71','#3498db'][k]); });
+    // desk chairs
+    HA.forEach(a=>{ if(!a.boss) deskChair(a.home.x,a.home.y); });
+    // agents
+    const list=HA.filter(a=>a.state!=='away').sort((p,q)=>p.y-q.y);
+    for(const a of list){
+      const tk=realT<(a.talkUntil||0)?Math.floor(realT*6)%2:0;
+      if(selKey===a.key){ const pulse=(Math.sin(realT*5)+1)/2; ctx.strokeStyle=`rgba(255,224,138,${.6+.4*pulse})`; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(Math.round(a.x)+.5,a.y+4.5,7,2.5,0,0,7); ctx.stroke(); }
+      if(a.state==='seated'){
+        const typing=a.active&&a.eff.state!=='waiting'&&a.eff.state!=='blocked'&&!a.faceRight;
+        drawChar(ctx,a,a.x,a.home.y,{dir:a.faceRight?'right':'up',seated:true,typing,bob:a.faceRight?tk:(typing?Math.floor(realT*5+a.proj.idx)%2:0)});
+        deskChairBack(a.home.x,a.home.y);
+        if(a.eff.state==='blocked'){ R(ctx,a.x-1,a.home.y-30,2,4,'#ff5a5a'); R(ctx,a.x-1,a.home.y-25,2,1,'#ff5a5a'); }
+      } else if(a.state==='walking') drawChar(ctx,a,a.x,a.y,{dir:a.dir,walk:[1,0,2,0][Math.floor(a.walkT)%4]});
+      else if(a.target&&a.target.seated) drawChar(ctx,a,a.x,a.y-tk,{dir:a.dir,seated:true,bob:0});
+      else drawChar(ctx,a,a.x,a.y-tk,{dir:a.dir,sofa:a.sofa});
+    }
+    // ของในมือ / แก้วบนโต๊ะ
+    const cup=(x,y,kind)=>{ if(kind==='snack'){ R(ctx,x-1,y,6,5,'#2a1d14'); R(ctx,x,y+1,4,3,'#c98a4a'); R(ctx,x+1,y+2,1,1,'#5a3a1c'); R(ctx,x+3,y+1,1,1,'#5a3a1c'); return; }
+      R(ctx,x-1,y-1,6,7,'#2a1d14'); R(ctx,x,y,4,5,'#ffffff'); R(ctx,x,y,4,1,'#6b3e1f'); R(ctx,x+4,y+1,2,3,'#2a1d14');
+      const ph=(realT*2+x)%2; R(ctx,x+1+Math.round(Math.sin(realT*3+x)),y-3-ph,1,1,'rgba(255,255,255,.8)'); R(ctx,x+2,y-5-ph,1,1,'rgba(255,255,255,.55)'); };
+    for(const a of list){
+      if(a.carry){ const d=a.dir, x=Math.round(a.x)+(d==='left'?-8:d==='right'?6:7), y=Math.round(a.y)-12; if(d!=='up') cup(x,y,a.carry); }
+      if(a.gift&&realT<(a.giftUntil||0)){ if(a.state==='seated') cup(a.home.x+15,a.home.y-35,a.gift); else if(a.state==='activity'&&!a.carry) cup(Math.round(a.x)+7,Math.round(a.y)-(a.target&&(a.target.seated||a.target.sofa)?9:12),a.gift); }
+      if(a.brewing){ for(let i=0;i<3;i++){ const ph=(realT*1.5+i/3)%1; R(ctx,Math.round(a.x)-2+i*2+Math.round(Math.sin(realT*4+i)*1.5),Math.round(a.y)-34-ph*8,1,1,`rgba(255,255,255,${.9-ph*.8})`); } }
+    }
+    // ❗ แจ้งเตือนเหนือหัว + วงแหวน
+    for(const a of list){ if(realT>=(a.alertUntil||0)) continue;
+      const fy=a.state==='seated'?a.home.y:a.y, top=(a.state==='seated'?fy-24:fy-29)-11-Math.round(Math.abs(Math.sin(realT*6))*3), x=Math.round(a.x);
+      R(ctx,x-4,top,9,10,'#2a1d14'); R(ctx,x-3,top+1,7,8,'#ffd166'); R(ctx,x-3,top+1,7,1,'#fff2b8'); R(ctx,x-1,top+2,3,4,'#c0392b'); R(ctx,x-1,top+7,3,1,'#c0392b');
+      const ph=(realT*1.6)%1; ctx.strokeStyle=`rgba(255,209,102,${1-ph})`; ctx.lineWidth=1.5; ctx.beginPath(); ctx.ellipse(x+.5,fy+3,6+ph*14,2+ph*5,0,0,7); ctx.stroke(); }
+    // 🎊 confetti ห้องประชุม
+    if(realT<confettiUntil){ if(confetti.length<90) for(let i=0;i<3;i++) confetti.push({x:214+Math.random()*212,y:28,vx:(Math.random()-.5)*12,vy:10+Math.random()*16,c:['#e74c3c','#f1c40f','#3498db','#2ecc71','#e07a9a','#fff'][Math.floor(Math.random()*6)],r:Math.random()*6});
+      confetti.forEach(p=>{ p.y+=p.vy/60; p.x+=p.vx/60+Math.sin(realT*4+p.r)*.3; if(p.y>TOPH-8){ p.y=28; p.x=214+Math.random()*212; } R(ctx,p.x,p.y,2,Math.sin(realT*8+p.r)>0?2:1,p.c); }); }
+    // แสงตามเวลาจริง
+    const nd=new Date(), hr=nd.getHours()+nd.getMinutes()/60;
+    if(hr>=18.5||hr<6){
+      ctx.fillStyle='rgba(14,20,48,.42)'; ctx.fillRect(0,0,HW,HH);
+      ctx.globalCompositeOperation='lighter';
+      desks.forEach(d=>{ const ag=HA.find(a=>a.proj===d.proj&&a.role===d.role); if(!(ag&&ag.state==='seated'&&ag.active)) return;
+        const cx=d.x+d.w/2, cy=d.y; const gr=ctx.createRadialGradient(cx,cy,2,cx,cy,34); gr.addColorStop(0,'rgba(255,220,150,.32)'); gr.addColorStop(1,'rgba(255,220,150,0)'); ctx.fillStyle=gr; ctx.fillRect(cx-36,cy-36,72,72); });
+      [[104,14],[320,14],[536,14],[536,MIDY+14],[300,BOTY+14],[88,BOTY+14]].forEach(([x,y])=>{ const gr=ctx.createRadialGradient(x,y+30,4,x,y+30,70); gr.addColorStop(0,'rgba(255,214,140,.16)'); gr.addColorStop(1,'rgba(255,214,140,0)'); ctx.fillStyle=gr; ctx.fillRect(x-72,y-42,144,144); });
+      ctx.globalCompositeOperation='source-over';
+    } else if(hr>=17){ ctx.fillStyle='rgba(255,140,60,.10)'; ctx.fillRect(0,0,HW,HH); }
+    else if(hr<8){ ctx.fillStyle='rgba(255,200,150,.07)'; ctx.fillRect(0,0,HW,HH); }
+    ctx=roomCtx;
+  }
+  const STAGE_COLOR_OF=s=>({'TODO':'#9a8a78','IN PROGRESS':'#3b6fd8','IN REVIEW':'#d97757','DONE':'#3fae6a'}[s]||'#b5832a');
+
+  /* ---------- overlay: ป้ายห้อง / ชื่อ / bubble ---------- */
+  ROOMDEF.forEach(r=>{ const d=document.createElement('div'); d.className='rlabel'; d.textContent=r.label; d.style.left=((r.x+6)/HW*100)+'%'; d.style.top=((r.k==='cmd'?r.y+r.h-14:r.y+FACE+1)/HH*100)+'%'; ovl.appendChild(d); });
+  ROOMS.forEach(p=>{ const d=document.createElement('div'); d.className='plabel'; d.textContent=p.short.toUpperCase(); d.style.left=((p.pod.x+27)/HW*100)+'%'; d.style.top=((p.pod.y+8)/HH*100)+'%'; ovl.appendChild(d);
+    const d2=document.createElement('div'); d2.className='plabel'; d2.textContent=p.short.toUpperCase(); const dk=desks.find(x=>x.proj===p&&x.role==='pm'); d2.style.left=((dk.x+dk.w/2)/HW*100)+'%'; d2.style.top=(29/HH*100)+'%'; ovl.appendChild(d2); });
+  { const lb=['รอทำ','กำลังทำ','รอตรวจ','เสร็จ','อื่นๆ']; COLS.forEach((col,ci)=>{ const d=document.createElement('div'); d.className='blabel'; d.textContent=lb[ci]; d.style.left=((BRD.x+BRD.lbl+ci*BRD.colW+BRD.colW/2)/HW*100)+'%'; d.style.top=((BRD.y+6)/HH*100)+'%'; ovl.appendChild(d); });
+    ROOMS.forEach((p,i)=>{ const d=document.createElement('div'); d.className='blabel'; d.textContent=p.short.toUpperCase(); d.style.left=((BRD.x+BRD.lbl/2)/HW*100)+'%'; d.style.top=((BRD.y+12+i*BRD.rowH+5.5)/HH*100)+'%'; ovl.appendChild(d); }); }
+  const noteOv=document.createElement('div'); ovl.appendChild(noteOv);
+  function renderBoardNotes(){ let h='';
+    ROOMS.forEach((p,i)=>{ const st=PS[p.id]; if(!st) return; const ry=BRD.y+12+i*BRD.rowH;
+      COLS.forEach((col,ci)=>{ const list=st.tasks.filter(tk=>col.key==='OTHER'?!['TODO','IN PROGRESS','IN REVIEW','DONE'].includes(tk.status):tk.status===col.key);
+        const cx=BRD.x+BRD.lbl+ci*BRD.colW, per=Math.max(1,Math.floor((BRD.colW-2)/9)), maxRows=Math.max(1,Math.floor((BRD.rowH-2)/8));
+        list.slice(0,per*maxRows).forEach((tk,k)=>{ const nx=cx+2+(k%per)*9+4, ny=ry+2+Math.floor(k/per)*8+3.7; h+=`<div class="nlabel" title="${esc(tk.id+' · '+tk.title)}" style="left:${nx/HW*100}%;top:${ny/HH*100}%">${esc(tk.id.replace(/^TASK-/,''))}</div>`; }); }); });
+    noteOv.innerHTML=h; }
+  HA.forEach(a=>{ a.tagEl=document.createElement('div'); a.tagEl.className='tag'+(a.boss?' bosstag':''); a.tagEl.textContent=a.name; a.tagEl.onclick=()=>hSelect(a.key);
+    a.bubEl=document.createElement('div'); a.bubEl.className='bubble'; ovl.appendChild(a.bubEl); ovl.appendChild(a.tagEl); });
+  function hPlace(){
+    for(const a of HA){
+      const away=a.state==='away'; a.tagEl.style.display=away?'none':''; if(away){ a.bubEl.classList.remove('show'); a._show=false; continue; }
+      const seated=a.state==='seated', sit=a.state==='activity'&&a.target&&(a.target.seated||a.target.sofa);
+      const fy=seated?a.home.y:a.y, ty=fy+(seated?4:2), hy=seated?fy-23:sit?fy-25:fy-29;
+      a.tagEl.style.left=(a.x/HW*100)+'%'; a.tagEl.style.top=(ty/HH*100)+'%'; a.tagEl.classList.toggle('sel',selKey===a.key);
+      const timed=a.bubble&&realT<a.bubbleUntil, txt=timed?a.bubble:(selKey===a.key?hStatus(a):'');
+      if(txt&&a.bubEl.textContent!==txt) a.bubEl.textContent=txt; a.bubEl.classList.toggle('show',!!txt);
+      a.bubEl.style.left=(a.x/HW*100)+'%'; a._by=(hy-1)/HH*hq.clientHeight; a._bx=a.x/HW*hq.clientWidth; a._show=!!txt;
+    }
+    // กัน bubble ซ้อนกัน: ตัวที่อยู่ล่างกว่าวางก่อน ตัวที่ชนจะถูกดันขึ้น
+    const vis=HA.filter(a=>a._show).sort((p,q)=>q._by-p._by), placed=[];
+    for(const a of vis){
+      const w=a.bubEl.offsetWidth||60, h=a.bubEl.offsetHeight||16; let top=a._by;
+      for(let pass=0;pass<4;pass++){ let moved=false; for(const o of placed){ if(Math.abs(o.x-a._bx)<(o.w+w)/2+2 && top>o.top-h-2 && top-h<o.top+2){ top=o.top-o.h-3; moved=true; } } if(!moved) break; }
+      placed.push({x:a._bx,top,w,h}); a.bubEl.style.top=top+'px';
+    }
+  }
+  const zoomEl=document.getElementById('hqZoom'), zoomBtn=document.getElementById('zoomOut'), zoomHint=document.getElementById('zoomHint');
+  let zoomed=null;
+  function zoomTo(r){ zoomed=r; if(!r){ zoomEl.style.transform=''; zoomBtn.style.display='none'; zoomHint.style.display=''; return; }
+    const W=stageEl.clientWidth, H=hq.clientHeight, k=W/HW, rw=r.w*k, rh=r.h*k, s=Math.min(2.6,Math.min(W/rw,H/rh)*.96);
+    let tx=-(r.x*k*s)+(W-rw*s)/2, ty=-(r.y*k*s)+(H-rh*s)/2; tx=Math.min(0,Math.max(W-W*s,tx)); ty=Math.min(0,Math.max(H-H*s,ty));
+    zoomEl.style.transform=`translate(${tx}px,${ty}px) scale(${s})`; zoomBtn.style.display=''; zoomHint.style.display='none'; }
+  zoomBtn.onclick=()=>zoomTo(null);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') zoomTo(null); });
+  hq.addEventListener('click',ev=>{ const r=hq.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width*HW, y=(ev.clientY-r.top)/r.height*HH;
+    let best=null,bd=1e9; for(const a of HA){ if(a.state==='away') continue; const ay=a.state==='seated'?a.home.y:a.y; if(Math.abs(x-a.x)<10&&y>ay-28&&y<ay+5){ const d=Math.abs(x-a.x)+Math.abs(y-ay+12); if(d<bd){bd=d;best=a;} } }
+    if(best){ hSelect(best.key); return; }
+    if(zoomed){ zoomTo(null); return; }
+    const room=ROOMDEF.find(rm=>x>=rm.x&&x<rm.x+rm.w&&y>=rm.y&&y<rm.y+rm.h); if(room) zoomTo(room); else hSelect(null); });
+
+  /* ---------- รายชื่อด้านซ้าย ---------- */
+  let selKey=null;
+  const roster=document.getElementById('roster');
+  function hSelect(k){ selKey=(selKey===k?null:k); renderRoster(true); }
+  function renderRoster(){
+    const B=BOSS, bcol=B.state==='away'?'#c9b393':'#d4af37';
+    roster.innerHTML=`<div class="rhead"><b>Agent Office</b> <span class="live">● LIVE</span></div><h3><span class="sq" style="background:#24242c"></span>ผู้บริหาร</h3><div class="ag${selKey===B.key?' sel':''}" data-k="boss"><img src="${B.avatar}" alt=""><div style="min-width:0"><div class="n">พี่ป่าน 👑</div><div class="r">หัวหน้าใหญ่</div></div><span class="pill" style="background:${bcol}22;color:${shade(bcol,-.4)}">${esc(B.state==='away'?'🏠 กลับบ้าน':B.state==='seated'?'ในห้อง':'เดินตรวจ')}</span></div>${selKey===B.key?`<div class="agd">${esc(hStatus(B))}${B.logs.length?'<ul class="logs" style="max-height:120px;margin-top:4px">'+B.logs.slice(0,5).map(l=>`<li><time>${hhmm(l.ms)}</time><span>${esc(l.text)}</span></li>`).join('')+'</ul>':''}</div>`:''}`+ROOMS.map(p=>`<h3><span class="sq" style="background:${p.color}"></span><a href="#${encodeURIComponent(p.id)}">${esc(p.name)}</a></h3>`+HA.filter(a=>a.proj===p).map(a=>{
+      const e=a.eff, col=e.state==='blocked'?'#e5484d':e.state==='waiting'?'#d97757':a.active?'#3fae6a':'#c9b393';
+      return `<div class="ag${selKey===a.key?' sel':''}${a.flash?' flash':''}" data-k="${esc(a.key)}"><img src="${a.avatar}" alt=""><div style="min-width:0"><div class="n">${esc(a.name)}</div><div class="r">${esc(a.role==='pm'?'Project Manager':BASE[a.role].role.toLowerCase())}</div></div><span class="pill" style="background:${col}22;color:${shade(col,-.35)}">${esc(a.state==='away'?'🏠 กลับบ้าน':a.active?(e.task||STATE_TH[e.state]):(a.state==='seated'?'ว่าง':'พัก'))}</span></div>`+(selKey===a.key?`<div class="agd">${esc(hStatus(a))}${a.logs.length?'<ul class="logs" style="max-height:120px;margin-top:4px">'+a.logs.slice(0,5).map(l=>`<li><time>${hhmm(l.ms)}</time><span>${esc(l.text)}</span></li>`).join('')+'</ul>':''}</div>`:'');
+    }).join('')).join('');
+    roster.querySelectorAll('.ag').forEach(el=>el.onclick=()=>hSelect(el.dataset.k));
+  }
+
+  /* ---------- สรุป / กิจกรรม ---------- */
+  function renderSummary(){
+    let working=0; const total={'IN PROGRESS':0,'IN REVIEW':0,'DONE':0,'TODO':0}; const items=[...hFeed];
+    for(const p of ROOMS){ const st=PS[p.id]; if(!st) continue; const tag=`[${p.short}]`;
+      st.tasks.forEach(t=>{ if(total[t.status]!==undefined) total[t.status]++; });
+      st.commits.slice(0,5).forEach(x=>items.push({ms:Date.parse(x.date),text:`${tag} 💾 ${x.subject}`}));
+      if(st.review.mtime) items.push({ms:st.review.mtime,text:`${tag} 🔍 ตรวจ ${st.review.round} → ${st.review.verdict}`});
+      if(st.handoff.mtime) items.push({ms:st.handoff.mtime,text:`${tag} 📨 ${st.handoff.task} · ${st.handoff.status}`});
+      if(st.test&&st.test.mtime) items.push({ms:st.test.mtime,text:`${tag} 🧪 ${st.test.task} → ${st.test.result}`}); }
+    working=HA.filter(a=>ACTIVE.has(a.eff.state)).length;
+    document.getElementById('sum').innerHTML=[['ทีม',P],['น้องที่ทำงานอยู่',working],['กำลังทำ',total['IN PROGRESS']],['รอตรวจ',total['IN REVIEW']],['รอทำ',total['TODO']],['เสร็จแล้ว',total['DONE']]].map(([k,v])=>`<div class="box"><div class="big">${v}</div><div class="lbl">${k}</div></div>`).join('');
+    document.getElementById('ovFeed').innerHTML=items.sort((p,q)=>q.ms-p.ms).slice(0,16).map(x=>`<li><time>${hhmm(x.ms)}</time><span>${esc(x.text)}</span></li>`).join('')||'<li><span>ยังไม่มีกิจกรรม</span></li>';
+    const d=new Date(); document.getElementById('clock').textContent=d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+
+  async function pollAll(){
+    await Promise.all(ROOMS.map(async p=>{ try{ const r=await fetch('/api/state?p='+encodeURIComponent(p.id),{cache:'no-store'}); if(r.ok){ PS[p.id]=await r.json(); connected=true; } }catch(e){ connected=false; } }));
+    renderConn(); applyHQ(); renderSummary(); renderRoster(); renderBoardNotes();
+  }
+  if(new URLSearchParams(location.search).has('debug')) window.__hq={SP,HA,astar,astarOn,block,blockDil,GW,GH,CS,startErrand,hStartConvo};
+  pollAll(); setInterval(pollAll,POLL_MS);
+  let lt=performance.now(), rosterAt=0;
+  function frame(now){ const dt=Math.min(.05,(now-lt)/1000); lt=now; realT+=dt; hUpdate(dt); hRender(now/1000); hPlace(); if(realT>rosterAt){ rosterAt=realT+1; if(selKey||HA.some(a=>a.flash!==a._lastFlash)){ HA.forEach(a=>a._lastFlash=a.flash); renderRoster(); } } requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+}
+
+})();
+</script>
+</body>
+</html>

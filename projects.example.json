@@ -1,0 +1,26 @@
+[
+  {
+    "id": "shop-app",
+    "name": "Shop App",
+    "root": "./example/shop-app",
+    "theme": "wood",
+    "short": "Shop",
+    "demo": true
+  },
+  {
+    "id": "blog-cms",
+    "name": "Blog CMS",
+    "root": "./example/blog-cms",
+    "theme": "sky",
+    "short": "Blog",
+    "demo": true
+  },
+  {
+    "id": "mobile-app",
+    "name": "Mobile App",
+    "root": "./example/mobile-app",
+    "theme": "mint",
+    "short": "Mobile",
+    "demo": true
+  }
+]
