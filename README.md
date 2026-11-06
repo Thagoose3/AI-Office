@@ -2,7 +2,7 @@
 
 **A live pixel-art office for your AI coding agents.**
 
-🎮 **Live demo:** https://thagoose3.github.io/ai-office/ (example teams, no install)
+🎮 **Live demo:** https://thagoose3.github.io/AI-Office/ (example teams, no install)
 Each agent (PM, UI, Dev, QA) is a little character that sits at its desk while it works, walks to the task board when a new task arrives, grabs coffee when idle, chats with other teams, and celebrates in the meeting room when a task is done — all driven by the real status of your projects.
 
 ออฟฟิศพิกเซลที่โชว์ว่าทีม AI ของคุณกำลังทำอะไรอยู่จริงๆ น้องแต่ละตัวนั่งทำงานเมื่อมีงาน เดินไปดูบอร์ดเมื่องานใหม่เข้า ว่างก็ไปชงกาแฟ คุยข้ามทีม และไปฉลองที่ห้องประชุมเมื่องานเสร็จ
