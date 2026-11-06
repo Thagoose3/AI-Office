@@ -187,6 +187,47 @@ body.embed canvas#room{cursor:pointer!important}
   <div class="foot">อ่านข้อมูลจากโปรเจกต์จริงทุก 3 วินาที · .review/ · git log · .office/status/</div>
 </div>
 <script>
+/* ===== Static demo for GitHub Pages =====
+   No server there, so /api/* is answered from demo/*.json — a snapshot of
+   the example/ teams (regenerate with: node server.js, then save
+   /api/projects and /api/state?p=<id> into demo/). Timestamps are shifted
+   to "now" so agents stay busy. Runs only when not on localhost, or with ?demo. */
+(function () {
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (local && !new URLSearchParams(location.search).has('demo')) return;
+  const realFetch = window.fetch.bind(window);
+  const base = location.pathname.replace(/[^/]*$/, '');
+  const shift = (s) => {
+    const now = Date.now(), d = now - (s.now || now);
+    s.now = now;
+    for (const k of ['tasksMtime']) if (s[k]) s[k] += d;
+    for (const k of ['test', 'review', 'handoff']) if (s[k] && s[k].mtime) s[k].mtime += d;
+    for (const a of Object.values(s.agents || {})) { a.updatedMs = now - 60000; a.ageMin = 1; a.stale = false; }
+    return s;
+  };
+  window.fetch = async function (input, init) {
+    const u = new URL(typeof input === 'string' ? input : input.url, location.href);
+    if (u.pathname.endsWith('/api/projects')) return realFetch(base + 'demo/projects.json', init);
+    if (u.pathname.endsWith('/api/state')) {
+      const id = (u.searchParams.get('p') || 'shop-app').replace(/[^\w-]/g, '');
+      const r = await realFetch(base + 'demo/state-' + id + '.json', init);
+      if (!r.ok) return r;
+      return new Response(JSON.stringify(shift(await r.json())), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return realFetch(input, init);
+  };
+  addEventListener('DOMContentLoaded', () => {
+    const b = document.createElement('a');
+    b.href = 'https://github.com/Thagoose3/ai-office';
+    b.target = '_blank';
+    b.rel = 'noopener';
+    b.textContent = 'DEMO · example data — view on GitHub ↗';
+    b.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9999;font:600 12px/1 system-ui,sans-serif;padding:8px 12px;border-radius:999px;background:#ff6a1a;color:#07090d;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.35)';
+    document.body.appendChild(b);
+  });
+})();
+</script>
+<script>
 (() => {
 /* ================= CONFIG ================= */
 const W = 384, H = 240, CORR = 128;

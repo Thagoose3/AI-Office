@@ -1,6 +1,8 @@
 # 🏢 AI Office
 
 **A live pixel-art office for your AI coding agents.**
+
+🎮 **Live demo:** https://thagoose3.github.io/ai-office/ (example teams, no install)
 Each agent (PM, UI, Dev, QA) is a little character that sits at its desk while it works, walks to the task board when a new task arrives, grabs coffee when idle, chats with other teams, and celebrates in the meeting room when a task is done — all driven by the real status of your projects.
 
 ออฟฟิศพิกเซลที่โชว์ว่าทีม AI ของคุณกำลังทำอะไรอยู่จริงๆ น้องแต่ละตัวนั่งทำงานเมื่อมีงาน เดินไปดูบอร์ดเมื่องานใหม่เข้า ว่างก็ไปชงกาแฟ คุยข้ามทีม และไปฉลองที่ห้องประชุมเมื่องานเสร็จ
@@ -39,6 +41,10 @@ On Windows just double-click **`AIOffice.bat`** (and `CreateDesktopShortcut.bat`
 Without a `projects.json` the office runs the **demo** in `example/` (3 sample teams).
 
 ---
+
+### 🌐 Static demo (GitHub Pages)
+
+`index.html` → `office.html`. When the page isn't served from localhost, it answers `/api/*` from `demo/*.json` (a snapshot of the `example/` teams) instead of the server. To refresh the snapshot: run `node server.js`, then save `/api/projects` → `demo/projects.json` and `/api/state?p=<id>` → `demo/state-<id>.json`. Add `?demo` to force it locally.
 
 ## 🔌 Connect your own projects
 
